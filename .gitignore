@@ -1,0 +1,80 @@
+# Ignore specific files & file types
+error_log
+log.txt
+*.log
+~*
+.svn
+.git
+temp
+tmp
+*.tmp
+access_log
+.sass-cache
+Movefile
+
+# Ignore specific directories
+node_modules
+
+# Ignore OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+*[Tt]humbs.db
+*.Trashes
+
+# Ignore Editor files
+*.sublime-project
+*.sublime-workspace
+*.komodoproject
+.idea
+
+# Ignore compiled files
+*.dll
+*.exe
+*.o
+*.so
+
+# Known large file types
+*.7z
+*.jar
+*.rar
+*.hqx
+*.bin
+*.deb
+*.dmg
+*.iso
+*.img
+*.msi
+*.msp
+*.msm
+*.mid
+*.midi
+*.kar
+*.mp3
+*.ogg
+*.m4a
+*.ra
+*.3gpp
+*.3gp
+*.mp4
+*.mpeg
+*.mpg
+*.mov
+*.webm
+*.flv
+*.m4v
+*.mng
+*.asx
+*.asf
+*.wmv
+*.avi
+*.zip
+*.tar
+*.tgz
+*.gz
+
+# Ignore everything in the root except the "wp-content" directory.
+!.gitignore
