@@ -5,7 +5,7 @@ body {
 	padding: 0;
 }
 
-#wc-logo {
+#mmt-logo {
 	border: 0;
 	margin: 0 0 24px;
 	padding: 0;
@@ -15,7 +15,7 @@ body {
 	}
 }
 
-.wc-setup-content {
+.mmt-content {
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.13);
 	padding: 24px 24px 0;
 	background: #fff;
@@ -93,78 +93,7 @@ body {
 			}
 		}
 	}
-	table.tax-rates {
-		width: 100%;
-		font-size: .92em;
-		th {
-			padding: 0;
-			text-align: center;
-			width: auto;
-			vertical-align: middle;
-		}
-		td {
-			border: 1px solid #f5f5f5;
-			padding: 6px;
-			text-align: center;
-			vertical-align: middle;
-			input {
-				outline: 0;
-				border: 0;
-				padding: 0;
-				box-shadow: none;
-				text-align: center;
-				width: 100%;
-			}
-			&.sort {
-				cursor: move;
-				color: #ccc;
-				&:before {
-					content: "\f333";
-					font-family: 'dashicons';
-				}
-			}
-			&.readonly {
-				background: #f5f5f5;
-			}
-		}
-		.add {
-			padding: 1em 0 0 1em;
-			line-height: 1em;
-			font-size: 1em;
-			width: 0;
-			margin: 6px 0 0;
-			height: 0;
-			overflow: hidden;
-			position: relative;
-			display: inline-block;
-			&:before {
-				content: "\f502";
-				font-family: 'dashicons';
-				position: absolute;
-				left: 0;
-				top: 0;
-			}
-		}
-		.remove {
-			padding: 1em 0 0 1em;
-			line-height: 1em;
-			font-size: 1em;
-			width: 0;
-			margin: 0;
-			height: 0;
-			overflow: hidden;
-			position: relative;
-			display: inline-block;
-			&:before {
-				content: "\f182";
-				font-family: 'dashicons';
-				position: absolute;
-				left: 0;
-				top: 0;
-			}
-		}
-	}
-	.wc-setup-pages {
+	.mmt-pages {
 		width: 100%;
 		border-top: 1px solid #eee;
 		thead th {
@@ -211,10 +140,7 @@ body {
 			}
 		}
 	}
-	.twitter-share-button {
-		float: right;
-	}
-	.wc-setup-next-steps {
+	.mmt-next-steps {
 		overflow: hidden;
 		margin: 0 0 24px;
 		h2 {
@@ -285,7 +211,7 @@ body {
 			}
 		}
 	}
-	.woocommerce-tracker, .updated {
+	.updated {
 		padding: 24px 24px 0;
 		margin: 0 0 24px 0;
 		overflow: hidden;
@@ -300,7 +226,7 @@ body {
 	}
 }
 
-.wc-setup-steps {
+.mmt-steps {
 	padding: 0 0 24px;
 	margin: 0;
 	list-style: none outside;
@@ -350,7 +276,7 @@ body {
 	}
 }
 
-.wc-setup .wc-setup-actions {
+.mmt-wizard .mmt-actions {
 	overflow: hidden;
 	.button {
 		float: right;
@@ -381,115 +307,10 @@ body {
 	}
 }
 
-.wc-return-to-dashboard {
+.mmt-return-to-dashboard {
 	font-size: 0.85em;
 	color: #b5b5b5;
 	margin: 1.18em 0;
 	display: block;
 	text-align: center;
-}
-
-ul.wc-wizard-payment-gateways {
-	border: 1px solid #eee;
-	border-bottom-width: 2px;
-	padding: 0;
-	margin: 0 0 1em;
-	list-style: none outside;
-	border-radius: 4px;
-
-	li.wc-wizard-gateway {
-		padding: 1.5em 1em 1em 4em;
-		border-top: 1px solid #eee;
-		list-style: none outside;
-		cursor: pointer;
-		color: #555;
-		box-sizing: border-box;
-		clear: both;
-
-		&:first-child {
-			border-top: 0;
-		}
-
-		&.featured {
-			width: 50%;
-			float: left;
-			clear: none;
-			border-right: 1px solid #eee;
-			border-top: 0;
-		}
-
-		&.featured-row-last {
-			border-right: 0;
-		}
-
-		.wc-wizard-gateway-settings {
-			display: none;
-			margin-bottom: 0;
-			cursor: default;
-		}
-
-		&.checked {
-			background: #F7F1F6;
-
-			.wc-wizard-gateway-settings {
-				display: table;
-			}
-		}
-
-		.wc-wizard-gateway-description {
-			font-style: italic;
-
-			p {
-				margin: 0 0 .5em;
-			}
-		}
-
-		.wc-wizard-gateway-enable {
-			margin: 0 0 .5em;
-
-			label {
-				display: block;
-				font-weight: bold;
-				vertical-align: middle;
-
-				img {
-					max-height: 2em;
-					vertical-align: middle;
-				}
-			}
-			label:before {
-				content: '';
-				background: #fff;
-				border: 2px solid #eee;
-				display: inline-block;
-				float: left;
-				vertical-align: middle;
-				width: 2em;
-				height: 2em;
-				padding: 0;
-				box-sizing: border-box;
-				line-height: 1.8em;
-				text-align: center;
-				margin: 0 1em 0 -3em;
-				border-radius: 4px;
-			}
-			input {
-				opacity: 0;
-				width: 0;
-				position: absolute;
-
-				&:checked + label:before {
-					content: "\f147";
-					font-family: 'dashicons';
-					color: #fff;
-					border-color: #a46497;
-					background: #a46497;
-				}
-
-				&:focus + label {
-					outline: 1px solid #ddd; /* focus style */
-				}
-			}
-		}
-	}
 }

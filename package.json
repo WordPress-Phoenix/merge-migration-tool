@@ -1,7 +1,7 @@
 {
-  "name": "merge-migration-tool",
+  "name": "MMT",
   "version": "0.1.0",
-  "author": "corycrowley",
+  "author": "fansided",
   "license": "GPL-2.0+",
   "repository": {
     "type": "git",

@@ -15,7 +15,7 @@ var notify = require('gulp-notify');
 
 // paths
 var paths = {
-    jsSrc: ['./assets/js/src/mmt.js'],
+    jsSrc: ['./assets/js/src/jquery.blockUI.js', './assets/js/src/mmt.js'],
     jsDest: './assets/js/',
     jsWatchers: ['./assets/js/src/*.js'],
     cssSrc: ['./assets/css/scss/mmt.scss'],

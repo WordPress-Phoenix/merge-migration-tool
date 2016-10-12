@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Merge Migration Tool
+ * Plugin Name: Migration Merge Tool
  * Plugin URI: https://github.com/WordPress-Phoenix/merge-migration-tool
  * Description: Migration or Merging the contents and users of 2 sites - multisite or single site.
  * Author: FanSided
@@ -12,20 +12,20 @@
  * GitHub Plugin URI: https://github.com/WordPress-Phoenix/merge-migration-tool
  * GitHub Branch: master
  *
- * @package Merge_Migration_Tool
+ * @package MMT
  * @category Plugin
  * @author scarstens, corycrowley, kyletheisen
  */
 
 defined( 'ABSPATH' ) or die();
 
-if ( ! class_exists( 'Merge_Migration_Tool' ) ) {
+if ( ! class_exists( 'MMT' ) ) {
 	/**
-	 * Merge Migration Tool Class
+	 * Migration Merge Tool Class
 	 *
 	 * @since 0.1.0
 	 */
-	class Merge_Migration_Tool {
+	class MMT {
 		/**
 		 * Merge Migration Tool Instance
 		 *
@@ -69,6 +69,7 @@ if ( ! class_exists( 'Merge_Migration_Tool' ) ) {
 			$this->constants();
 			$this->libs();
 			$this->includes();
+			do_action( 'mmt/init' );
 		}
 
 		/**
@@ -78,14 +79,16 @@ if ( ! class_exists( 'Merge_Migration_Tool' ) ) {
 		 * @since 0.1.0
 		 */
 		private function constants() {
-			define( 'MMT_VER', $this->version );
+			defined( 'MMT_DEBUG' ) or define( 'MMT_DEBUG', true );
+			define( 'MMT_VERSION', $this->version );
 			define( 'MMT_DIR', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 			define( 'MMT_URL', trailingslashit( plugin_dir_url( __FILE__ ) ) );
 			define( 'MMT_LIB', trailingslashit( MMT_DIR . 'lib' ) );
-			define( 'MMT_INC', trailingslashit( MMT_DIR . 'inc' ) );
+			define( 'MMT_INC', trailingslashit( MMT_DIR . 'includes' ) );
 			define( 'MMT_ASSETS', trailingslashit( MMT_URL . 'assets' ) );
 			define( 'MMT_CSS', trailingslashit( MMT_ASSETS . 'css' ) );
 			define( 'MMT_JS', trailingslashit( MMT_ASSETS . 'js' ) );
+			do_action( 'mmt/constants' );
 		}
 
 		/**
@@ -98,6 +101,7 @@ if ( ! class_exists( 'Merge_Migration_Tool' ) ) {
 			if ( ! class_exists( 'WP_REST_Controller' ) ) {
 				require_once MMT_LIB . 'class-wp-rest-controller.php';
 			}
+			do_action( 'mmt/libs' );
 		}
 
 		/**
@@ -107,10 +111,36 @@ if ( ! class_exists( 'Merge_Migration_Tool' ) ) {
 		 * @since 0.1.0
 		 */
 		private function includes() {
-			include_once MMT_INC . 'class-mmt-autoloader.php';
+			require_once MMT_INC . 'class-mmt-rest-api.php';
+			require_once MMT_INC . 'class-mmt-wizard.php';
+			do_action( 'mmt/includes' );
+		}
+
+		/**
+		 * Debug Function
+		 *
+		 * @static
+		 * @since 0.1.0
+		 *
+		 * @param string $message
+		 *
+		 * @return void
+		 */
+		public static function debug( $message ) {
+			if ( WP_DEBUG === true ) {
+				if ( is_array( $message ) || is_object( $message ) ) {
+					error_log( print_r( $message, true ) );
+				} else {
+					error_log( $message );
+				}
+			}
 		}
 	}
-}
 
-/* Initialize */
-Merge_Migration_Tool::get_instance();
+	/**
+	 * Initialize
+	 *
+	 * @since 0.1.0
+	 */
+	add_action( 'plugins_loaded', array( 'MMT', 'get_instance' ) );
+}
