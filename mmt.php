@@ -69,7 +69,13 @@ if ( ! class_exists( 'MMT' ) ) {
 			$this->constants();
 			$this->libs();
 			$this->includes();
-			do_action( 'mmt/init' );
+
+			/**
+			 * Hook: MMT Loaded
+			 *
+			 * @since 0.1.0
+			 */
+			do_action( 'mmt_loaded' );
 		}
 
 		/**
@@ -79,7 +85,6 @@ if ( ! class_exists( 'MMT' ) ) {
 		 * @since 0.1.0
 		 */
 		private function constants() {
-			defined( 'MMT_DEBUG' ) or define( 'MMT_DEBUG', true );
 			define( 'MMT_VERSION', $this->version );
 			define( 'MMT_DIR', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 			define( 'MMT_URL', trailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -88,7 +93,6 @@ if ( ! class_exists( 'MMT' ) ) {
 			define( 'MMT_ASSETS', trailingslashit( MMT_URL . 'assets' ) );
 			define( 'MMT_CSS', trailingslashit( MMT_ASSETS . 'css' ) );
 			define( 'MMT_JS', trailingslashit( MMT_ASSETS . 'js' ) );
-			do_action( 'mmt/constants' );
 		}
 
 		/**
@@ -98,10 +102,17 @@ if ( ! class_exists( 'MMT' ) ) {
 		 * @since 0.1.0
 		 */
 		private function libs() {
+			include_once MMT_LIB . 'wp-rest-functions.php';
 			if ( ! class_exists( 'WP_REST_Controller' ) ) {
 				require_once MMT_LIB . 'class-wp-rest-controller.php';
 			}
-			do_action( 'mmt/libs' );
+
+			/**
+			 * Hook: Add additional libraries
+			 *
+			 * @since 0.1.0
+			 */
+			do_action( 'mmt_libs' );
 		}
 
 		/**
@@ -111,9 +122,15 @@ if ( ! class_exists( 'MMT' ) ) {
 		 * @since 0.1.0
 		 */
 		private function includes() {
-			require_once MMT_INC . 'class-mmt-rest-api.php';
+			require_once MMT_INC . 'class-mmt-api.php';
 			require_once MMT_INC . 'class-mmt-wizard.php';
-			do_action( 'mmt/includes' );
+
+			/**
+			 * Hook: Add additional includes
+			 *
+			 * @since 0.1.0
+			 */
+			do_action( 'mmt_includes' );
 		}
 
 		/**
