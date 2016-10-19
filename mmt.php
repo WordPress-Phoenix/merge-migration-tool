@@ -12,9 +12,9 @@
  * GitHub Plugin URI: https://github.com/WordPress-Phoenix/merge-migration-tool
  * GitHub Branch: master
  *
- * @package MMT
+ * @package  MMT
  * @category Plugin
- * @author scarstens, corycrowley, kyletheisen
+ * @author   scarstens, corycrowley, kyletheisen
  */
 
 defined( 'ABSPATH' ) or die();
@@ -26,10 +26,11 @@ if ( ! class_exists( 'MMT' ) ) {
 	 * @since 0.1.0
 	 */
 	class MMT {
+
 		/**
 		 * Merge Migration Tool Instance
 		 *
-		 * @since 0.1.0
+		 * @since  0.1.0
 		 *
 		 * @access private
 		 * @var Merge_Migration_Tool
@@ -39,7 +40,7 @@ if ( ! class_exists( 'MMT' ) ) {
 		/**
 		 * Plugin Version
 		 *
-		 * @since 0.1.0
+		 * @since  0.1.0
 		 *
 		 * @access private
 		 * @var string
@@ -57,6 +58,7 @@ if ( ! class_exists( 'MMT' ) ) {
 			if ( is_null( self::$instance ) ) {
 				self::$instance = new self();
 			}
+
 			return self::$instance;
 		}
 
@@ -69,20 +71,13 @@ if ( ! class_exists( 'MMT' ) ) {
 			$this->constants();
 			$this->libs();
 			$this->includes();
-
-			/**
-			 * Hook: MMT Loaded
-			 *
-			 * @since 0.1.0
-			 */
-			do_action( 'mmt_loaded' );
 		}
 
 		/**
 		 * Define Constants
 		 *
 		 * @access private
-		 * @since 0.1.0
+		 * @since  0.1.0
 		 */
 		private function constants() {
 			define( 'MMT_VERSION', $this->version );
@@ -99,38 +94,24 @@ if ( ! class_exists( 'MMT' ) ) {
 		 * Libraries
 		 *
 		 * @access private
-		 * @since 0.1.0
+		 * @since  0.1.0
 		 */
 		private function libs() {
 			include_once MMT_LIB . 'wp-rest-functions.php';
 			if ( ! class_exists( 'WP_REST_Controller' ) ) {
 				require_once MMT_LIB . 'class-wp-rest-controller.php';
 			}
-
-			/**
-			 * Hook: Add additional libraries
-			 *
-			 * @since 0.1.0
-			 */
-			do_action( 'mmt_libs' );
 		}
 
 		/**
 		 * Includes
 		 *
 		 * @access private
-		 * @since 0.1.0
+		 * @since  0.1.0
 		 */
 		private function includes() {
 			require_once MMT_INC . 'class-mmt-api.php';
-			require_once MMT_INC . 'class-mmt-wizard.php';
-
-			/**
-			 * Hook: Add additional includes
-			 *
-			 * @since 0.1.0
-			 */
-			do_action( 'mmt_includes' );
+			require_once MMT_INC . 'class-mmt-admin.php';
 		}
 
 		/**
@@ -139,7 +120,7 @@ if ( ! class_exists( 'MMT' ) ) {
 		 * @static
 		 * @since 0.1.0
 		 *
-		 * @param string $message
+		 * @param string $message The debug message.
 		 *
 		 * @return void
 		 */
@@ -159,5 +140,5 @@ if ( ! class_exists( 'MMT' ) ) {
 	 *
 	 * @since 0.1.0
 	 */
-	add_action( 'plugins_loaded', array( 'MMT', 'get_instance' ) );
+	add_action( 'plugins_loaded', array( 'MMT', 'get_instance' ), 10, 1 );
 }

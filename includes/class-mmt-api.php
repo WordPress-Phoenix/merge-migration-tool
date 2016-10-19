@@ -64,12 +64,6 @@ class MMT_API {
 		require_once MMT_INC . 'endpoints/class-mmt-rest-posts-controller.php';
 		require_once MMT_INC . 'endpoints/class-mmt-rest-terms-controller.php';
 		require_once MMT_INC . 'endpoints/class-mmt-rest-media-controller.php';
-		/**
-		 * Hook: Rest API Includes
-		 *
-		 * @since 0.1.0
-		 */
-		do_action( 'mmt_rest_api_includes', $this );
 	}
 }
 
