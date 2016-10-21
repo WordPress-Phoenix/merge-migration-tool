@@ -73,14 +73,82 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$users_query = new WP_User_Query( array( 'number' => 10 ) );
-		$users       = array();
+
+		// Args for query.
+		$user_args            = array();
+		$user_args['exclude'] = $request['exclude'];
+		$user_args['include'] = $request['include'];
+		$user_args['order']   = $request['order'];
+		$user_args['number']  = $request['per_page'];
+		if ( ! empty( $request['offset'] ) ) {
+			$user_args['offset'] = $request['offset'];
+		} else {
+			$user_args['offset'] = ( $request['page'] - 1 ) * $user_args['number'];
+		}
+		$orderby_possibles     = array(
+			'id'              => 'ID',
+			'include'         => 'include',
+			'name'            => 'display_name',
+			'registered_date' => 'registered',
+			'slug'            => 'user_nicename',
+			'email'           => 'user_email',
+			'url'             => 'user_url',
+		);
+		$user_args['orderby']  = $orderby_possibles[ $request['orderby'] ];
+		$user_args['role__in'] = $request['roles'];
+
+		/**
+		 * Filter User Query Arguments
+		 *
+		 * @see https://developer.wordpress.org/reference/classes/wp_user_query/
+		 *
+		 * @param array           $user_args Array of arguments for WP_User_Query.
+		 * @param WP_REST_Request $request   The current request.
+		 */
+		$user_args = apply_filters( 'mmt_rest_api_user_query', $user_args, $request );
+
+		$users_query = new WP_User_Query( $user_args );
+
+		$users = array();
 		foreach ( $users_query->get_results() as $user ) {
 			$data    = $this->prepare_item_for_response( $user, $request );
 			$users[] = $this->prepare_response_for_collection( $data );
 		}
 
 		$response = rest_ensure_response( $users );
+
+		// Store pagation values for headers then unset for count query.
+		$per_page = (int) $user_args['number'];
+		$page     = ceil( ( ( (int) $user_args['offset'] ) / $per_page ) + 1 );
+
+		$user_args['fields'] = 'ID';
+
+		$total_users = $users_query->get_total();
+		if ( $total_users < 1 ) {
+			// Out-of-bounds, run the query again without LIMIT for total count
+			unset( $user_args['number'] );
+			unset( $user_args['offset'] );
+			$user_count_query = new WP_User_Query( $user_args );
+			$total_users = $user_count_query->get_total();
+		}
+		$response->header( 'X-WP-Total', (int) $total_users );
+		$max_pages = ceil( $total_users / $per_page );
+		$response->header( 'X-WP-TotalPages', (int) $max_pages );
+
+		$base = add_query_arg( $request->get_query_params(), rest_url( sprintf( '%s/%s', $this->namespace, $this->rest_base ) ) );
+		if ( $page > 1 ) {
+			$prev_page = $page - 1;
+			if ( $prev_page > $max_pages ) {
+				$prev_page = $max_pages;
+			}
+			$prev_link = add_query_arg( 'page', $prev_page, $base );
+			$response->link_header( 'prev', $prev_link );
+		}
+		if ( $max_pages > $page ) {
+			$next_page = $page + 1;
+			$next_link = add_query_arg( 'page', $next_page, $base );
+			$response->link_header( 'next', $next_link );
+		}
 
 		return apply_filters( 'mmt_rest_api_user_items_response', $response );
 	}
@@ -155,6 +223,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 			'link'               => ( ! empty( $schema['properties']['link'] ) ) ? get_author_posts_url( $user->ID, $user->user_nicename ) : '',
 			'nickname'           => ( ! empty( $schema['properties']['nickname'] ) ) ? $user->nickname : '',
 			'slug'               => ( ! empty( $schema['properties']['slug'] ) ) ? $user->user_nicename : '',
+			'role'               => ( ! empty( $schema['properties']['role'] ) ) ? $user->role : '',
 			'roles'              => ( ! empty( $schema['properties']['roles'] ) ) ? array_values( $user->roles ) : array(),
 			'registered_date'    => ( ! empty( $schema['properties']['registered_date'] ) ) ? date( 'c', strtotime( $user->user_registered ) ) : '',
 			'capabilities'       => ( ! empty( $schema['properties']['capabilities'] ) ) ? (object) $user->allcaps : '',

@@ -62,12 +62,7 @@ class MMT_REST_Access_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_item( $request ) {
-		$api_key = esc_attr( $request['api_key'] );
-
-		if ( ! $api_key || ! MMT_API::verify_remote_key( $api_key ) ) {
-			return new WP_Error( 'rest_invalid_api_key', esc_html__( 'Your api key is invalid.', 'mmt' ), array( 'status' => rest_authorization_required_code() ) );
-		}
-
+		// If it makes it here, it has been verified.
 		$access   = $this->prepare_item_for_response( true, $request );
 		$response = rest_ensure_response( $access );
 

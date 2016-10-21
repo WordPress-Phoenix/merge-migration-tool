@@ -143,7 +143,7 @@ class MMT_API {
 	 * @static
 	 * @access private
 	 *
-	 * @since 0.1.0
+	 * @since  0.1.0
 	 *
 	 * @return string
 	 */
@@ -224,6 +224,20 @@ class MMT_API {
 	}
 
 	/**
+	 * Hash Key
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @param string $key The key to be hashed.
+	 *
+	 * @return string $key
+	 */
+	private static function hash_key( $key ) {
+		return hash_hmac( 'md5', $key, '292366AFF23AA43A31BBB6E48CAD2' );
+	}
+
+	/**
 	 * Verify - Remote Key => Migration Key
 	 *
 	 * @static
@@ -235,7 +249,8 @@ class MMT_API {
 	 */
 	public static function verify_remote_key( $key ) {
 		$migration_key = esc_attr( self::get_migration_key() );
-		return ( hash_equals( wp_hash( $migration_key ), $key ) ) ? true : false;
+
+		return ( hash_equals( self::hash_key( $migration_key ), $key ) ) ? true : false;
 	}
 
 	/**
@@ -261,7 +276,7 @@ class MMT_API {
 		}
 
 		// hash the key for some additional security, not much but....
-		$remote_key = wp_hash( $remote_key );
+		$remote_key = self::hash_key( $remote_key );
 
 		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
 		$url = add_query_arg( 'api_key', $remote_key, $url );
@@ -273,6 +288,18 @@ class MMT_API {
 		}
 
 		return json_decode( wp_remote_retrieve_body( $response ), true );
+	}
+
+	/**
+	 * Clear Data
+	 *
+	 * @static
+	 * @since 1.0.0
+	 */
+	public static function clear_data() {
+		delete_transient( 'mmt_users' );
+		delete_transient( 'mmt_users_conflicted' );
+		delete_transient( 'mmt_users_migrateable' );
 	}
 
 	/**
@@ -302,7 +329,170 @@ class MMT_API {
 	 * @return array
 	 */
 	public static function get_users() {
-		return self::get_data( 'users' );
+		if ( false === ( $users = get_transient( 'mmt_users' ) ) ) {
+			$users = self::get_data( 'users' );
+			set_transient( 'mmt_users', $users, DAY_IN_SECONDS );
+		}
+
+		return $users;
+	}
+
+	/**
+	 * Create Users Collection
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @param array $remote_users The remote users array.
+	 *
+	 * @return array
+	 */
+	public static function create_users_collection( $remote_users = array() ) {
+		if ( empty( $remote_users ) ) {
+			$remote_users = self::get_users();
+		}
+
+		// Clear stale data
+		delete_transient( 'mmt_users_conflicted' );
+		delete_transient( 'mmt_users_migrateable' );
+
+		// Define collection holders
+		$current_site_users = array();
+		$conflicted_users   = array();
+		$migrateable_users  = array();
+
+		// Get Current Site Users
+		$current_users_query = new WP_User_Query( array( 'number' => - 1 ) );
+		foreach ( $current_users_query->get_results() as $user ) {
+			$current_site_users[] = array(
+				'username' => $user->user_login,
+				'email'    => $user->user_email,
+				'user'     => $user,
+			);
+		}
+
+		// Check for confligcts
+		foreach ( $remote_users as $remote_user ) {
+
+			// Username Conflict.
+			if ( false !== ( $conflict_key = array_search( $remote_user['username'], array_column( $current_site_users, 'username' ), true ) ) ) {
+				$conflicted_users[] = array(
+					'user'         => $remote_user,
+					'current_user' => $current_site_users[ $conflict_key ]['user'],
+					'conflict'     => 'username',
+				);
+				continue;
+			}
+
+			// Email Conflict.
+			if ( false !== ( $conflict_key = array_search( $remote_user['email'], array_column( $current_site_users, 'email' ), true ) ) ) {
+				$migrateable_users[] = array(
+					'user'         => $remote_user,
+					'current_user' => $current_site_users[ $conflict_key ]['user'],
+					'conflict'     => 'email',
+				);
+				continue;
+			}
+
+			// No username or email conflicts.
+			$migrateable_users[] = array( 'user' => $remote_user );
+		}
+
+		// Set Transients for later
+		set_transient( 'mmt_users_conflicted', $conflicted_users, DAY_IN_SECONDS );
+		set_transient( 'mmt_users_migrateable', $migrateable_users, DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Get Users Conflict Collection
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array
+	 */
+	public static function get_users_conflict_collection() {
+		if ( false === ( $conflicting_users = get_transient( 'mmt_users_conflicted' ) ) ) {
+			self::create_users_collection();
+			$conflicting_users = get_transient( 'mmt_users_conflicted' );
+		}
+
+		return $conflicting_users;
+	}
+
+	/**
+	 * Get Users Conflict Collection
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array
+	 */
+	public static function get_users_migratable_collection() {
+		if ( false === ( $migrateable_users = get_transient( 'mmt_users_migrateable' ) ) ) {
+			self::create_users_collection();
+			$migrateable_users = get_transient( 'mmt_users_migrateable' );
+		}
+
+		return $migrateable_users;
+	}
+
+	/**
+	 * Migrate Users
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array $users The users to be migrated.
+	 *
+	 * @return array $created_users The created users.
+	 */
+	public static function migrate_users( $users = array() ) {
+		if ( empty( $users ) ) {
+			$users = self::get_users_migratable_collection();
+		}
+
+		$migrated_users = array();
+
+		foreach ( $users as $user ) {
+			$user     = $user['user'];
+			$userdata = array(
+				'user_login'      => $user['username'],
+				'user_url'        => $user['url'],
+				'user_email'      => $user['email'],
+				'first_name'      => $user['first_name'],
+				'last_name'       => $user['last_name'],
+				'user_pass'       => null,
+				'display_name'    => $user['name'],
+				'description'     => $user['description'],
+				'nickname'        => $user['nickname'],
+				'user_nicename'   => $user['slug'],
+				'user_registered' => $user['registered_date'],
+			);
+
+			$user_id = wp_insert_user( $userdata );
+
+			if ( is_wp_error( $user_id ) ) {
+				MMT::debug( $user_id->get_error_message() );
+				continue;
+			}
+
+			$migrated_users[] = new WP_User( $user_id );
+		}
+
+		if ( ! empty( $migrated_users ) ) {
+			set_transient( 'mmt_users_migrated', $migrated_users, DAY_IN_SECONDS );
+		}
+
+		return $migrated_users;
+	}
+
+	/**
+	 * Get Migrated Users
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array $migrated_users The users that were migrated.
+	 */
+	public static function get_migrated_users() {
+		return ( false !== ( $users = get_transient( 'mmt_users_migrated' ) ) ) ? $users : array();
 	}
 
 	/**

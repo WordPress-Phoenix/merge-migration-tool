@@ -96,15 +96,10 @@ class MMT_Wizard {
 						'view'    => array( $this, 'users_migration_start' ),
 						'handler' => array( $this, 'users_migration_start_handler' ),
 					),
-					'user_get_count' => array(
+					'users_process'  => array(
 						'name'    => __( 'Get Users', 'mmt' ),
-						'view'    => array( $this, 'user_get_count' ),
-						'handler' => array( $this, 'user_get_count_handler' ),
-					),
-					'user_conflicts' => array(
-						'name'    => __( 'User Conflicts', 'mmt' ),
-						'view'    => array( $this, 'user_conflicts' ),
-						'handler' => array( $this, 'user_conflicts_handler' ),
+						'view'    => array( $this, 'users_process' ),
+						'handler' => array( $this, 'users_process_handler' ),
 					),
 					'users_complete' => array(
 						'name'    => __( 'Finish', 'mmt' ),
@@ -377,6 +372,7 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 */
 	public function users_migration_start() {
+		MMT_API::clear_data();
 		$url = MMT_API::get_remote_url();
 		?>
 		<h1><?php esc_attr_e( 'Start Users Migration', 'mmt' ); ?></h1>
@@ -400,21 +396,50 @@ class MMT_Wizard {
 	 */
 	public function users_migration_start_handler() {
 		check_admin_referer( 'mmt-wizard', 'security' );
+
+		MMT_API::create_users_collection();
+
 		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
 		exit;
 	}
 
 	/**
-	 * Users - List
+	 * Users - Process
 	 *
 	 * @since 0.1.0
 	 */
-	public function user_get_count() {
-		$user_count = '54';
+	public function users_process() {
+		$conflicted_users  = MMT_API::get_users_conflict_collection();
+		$migrateable_users = MMT_API::get_users_migratable_collection();
 		?>
-		<h1><?php esc_attr_e( 'Users', 'mmt' ); ?></h1>
+		<h1><?php esc_attr_e( 'Users List', 'mmt' ); ?></h1>
 		<form method="post">
-			<p><?php echo sprintf( esc_html__( 'We found %s users to be migrated.', 'mmt' ), '<strong>' . esc_attr( $user_count ) . '</strong>' ); ?></p>
+			<?php if ( $migrateable_users ) { ?>
+				<h4><?php esc_html_e( 'Users available to be migrated:', 'mmt' ); ?></h4>
+				<div class="mmt-users-list-overflow">
+					<?php foreach ( $migrateable_users as $migrateable_user ) { ?>
+						<div class="mmt-user-item"><?php printf( '%s (%s)', esc_attr( $migrateable_user['user']['username'] ), esc_attr( $migrateable_user['user']['email'] ) ); ?></div>
+					<?php } ?>
+				</div>
+			<?php } ?>
+			<?php if ( $conflicted_users ) { ?>
+				<h4><?php esc_html_e( 'Users that have conflicts:', 'mmt' ); ?></h4>
+				<p><?php esc_html_e( 'Please copy this list. These users will not be migrated.', 'mmt' ); ?></p>
+				<div class="mmt-users-list-overflow">
+					<?php foreach ( $conflicted_users as $conflicted_user ) { ?>
+						<div class="mmt-user-item">
+							<?php
+							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Current User', 'mmt' ), esc_attr( $conflicted_user['current_user']->user_login ), esc_attr( $conflicted_user['current_user']->user_email ) );
+							?>
+							<br/>
+							<?php
+							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Remote User', 'mmt' ), esc_attr( $conflicted_user['user']['username'] ), esc_attr( $conflicted_user['user']['email'] ) );
+							?>
+						</div>
+						<br/>
+					<?php } ?>
+				</div>
+			<?php } ?>
 			<p class="mmt-actions step">
 				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
 				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
@@ -425,12 +450,15 @@ class MMT_Wizard {
 	}
 
 	/**
-	 * Users - List Handler
+	 * Users - Process Handler
 	 *
 	 * @since 0.1.0
 	 */
-	public function user_get_count_handler() {
+	public function users_process_handler() {
 		check_admin_referer( 'mmt-wizard', 'security' );
+
+		MMT_API::migrate_users();
+
 		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
 		exit;
 	}
@@ -472,10 +500,37 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 */
 	public function users_complete() {
+		$conflicted_users = MMT_API::get_users_conflict_collection();
+		$migrated_users   = MMT_API::get_migrated_users();
 		?>
-		<h1><?php esc_attr_e( 'User Migration Complete', 'mmt' ); ?></h1>
+		<h1><?php esc_attr_e( 'User Migration Complete!', 'mmt' ); ?></h1>
 		<form method="post">
-			<p><?php echo esc_html_e( 'Congragulations! The user migration is complete. Please continue below.', 'mmt' ); ?></p>
+			<p><?php echo esc_html_e( 'Congragulations! The user migration is complete. Below are the users that were migrated:', 'mmt' ); ?></p>
+			<?php if ( $migrated_users ) { ?>
+				<h4><?php esc_html_e( 'Users that have conflicts', 'mmt' ); ?></h4>
+				<div class="mmt-users-list-overflow">
+					<?php foreach ( $migrated_users as $migrated_user ) { ?>
+						<div class="mmt-user-item"><?php printf( '%s (%s)', esc_attr( $migrated_user->user_login ), esc_attr( $migrate_user->user_email ) ); ?></div>
+					<?php } ?>
+				</div>
+			<?php } ?>
+			<?php if ( $conflicted_users ) { ?>
+				<p><?php esc_html_e( 'For your reference, these were the users that were not migrated.', 'mmt' ); ?></p>
+				<div class="mmt-users-list-overflow">
+					<?php foreach ( $conflicted_users as $conflicted_user ) { ?>
+						<div class="mmt-user-item">
+							<?php
+							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Current User', 'mmt' ), esc_attr( $conflicted_user['current_user']->user_login ), esc_attr( $conflicted_user['current_user']->user_email ) );
+							?>
+							<br/>
+							<?php
+							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Remote User', 'mmt' ), esc_attr( $conflicted_user['user']['username'] ), esc_attr( $conflicted_user['user']['email'] ) );
+							?>
+						</div>
+						<br/>
+					<?php } ?>
+				</div>
+			<?php } ?>
 			<p class="mmt-actions step">
 				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
 				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
