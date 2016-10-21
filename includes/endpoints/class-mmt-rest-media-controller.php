@@ -2,9 +2,9 @@
 /**
  * Migration Merge Tool - Media - Rest Controller Class
  *
- * @package MMT
+ * @package    MMT
  * @subpackage Includes
- * @since 0.1.0
+ * @since      0.1.0
  */
 
 defined( 'ABSPATH' ) or die();
@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) or die();
  *
  * @since 0.1.0
  */
-class MMT_REST_Media_Controller extends WP_REST_Controller {
+class MMT_REST_Media_Controller extends MMT_REST_Controller {
 
 	/**
 	 * Rest Base
@@ -29,7 +29,7 @@ class MMT_REST_Media_Controller extends WP_REST_Controller {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param $type
+	 * @param string $namespace
 	 */
 	public function __construct( $namespace ) {
 		$this->namespace = $namespace;
@@ -47,21 +47,8 @@ class MMT_REST_Media_Controller extends WP_REST_Controller {
 				'callback'            => array( $this, 'get_items' ),
 				'permission_callback' => array( $this, 'get_items_permissions_check' ),
 				'args'                => $this->get_collection_params(),
-			)
+			),
 		) );
-	}
-
-	/**
-	 * Check if a given request has access to get items
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param WP_REST_Request $request Full data about the request.
-	 *
-	 * @return WP_Error|bool
-	 */
-	public function get_items_permissions_check( $request ) {
-		return true;
 	}
 
 	/**
@@ -74,14 +61,17 @@ class MMT_REST_Media_Controller extends WP_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$items = array(); //do a query, call another class, etc
-		$data  = array();
-		foreach ( $items as $item ) {
-			$itemdata = $this->prepare_item_for_response( $item, $request );
-			$data[]   = $this->prepare_response_for_collection( $itemdata );
+		$media_items = array();
+		$media       = array();
+		foreach ( $media_items as $media_item ) {
+			$itemdata = $this->prepare_item_for_response( $media_item, $request );
+			$media[]  = $this->prepare_response_for_collection( $itemdata );
 		}
 
-		return new WP_REST_Response( $data, 200 );
+		// Wrap the media in a response object
+		$response = rest_ensure_response( $media );
+
+		return $response;
 	}
 
 	/**
@@ -89,13 +79,31 @@ class MMT_REST_Media_Controller extends WP_REST_Controller {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param mixed $item WordPress representation of the item.
-	 * @param WP_REST_Request $request Request object.
+	 * @param mixed           $media_item The Media Item object.
+	 * @param WP_REST_Request $request    Request object.
 	 *
 	 * @return mixed
 	 */
-	public function prepare_item_for_response( $item, $request ) {
-		return array();
+	public function prepare_item_for_response( $media_item, $request ) {
+		$data   = array();
+		$schema = $this->get_item_schema();
+
+		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
+
+		$data = $this->add_additional_fields_to_object( $data, $request );
+		$data = $this->filter_response_by_context( $data, $context );
+
+		// Wrap the data in a response object
+		$response = rest_ensure_response( $data );
+
+		/**
+		 * Filter media data returned from the REST API.
+		 *
+		 * @param WP_REST_Response $response   The response object.
+		 * @param object           $media_item Media Item object used to create response.
+		 * @param WP_REST_Request  $request    Request object.
+		 */
+		return apply_filters( 'mmt_rest_api_prepare_media', $response, $media_item, $request );
 	}
 
 	/**
