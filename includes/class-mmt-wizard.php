@@ -136,7 +136,6 @@ class MMT_Wizard {
 		ob_start();
 		$this->header();
 		$this->steps();
-		$this->sub_steps();
 		$this->step_content();
 		$this->footer();
 		exit;
