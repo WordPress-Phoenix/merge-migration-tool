@@ -25,6 +25,14 @@ class MMT_Wizard {
 	private $step;
 
 	/**
+	 * Current Sub Step
+	 *
+	 * @since 0.1.0
+	 * @var string
+	 */
+	private $sub_step;
+
+	/**
 	 * Steps
 	 *
 	 * @since 0.1.0
@@ -33,12 +41,11 @@ class MMT_Wizard {
 	private $steps = array();
 
 	/**
-	 * Exit Link
+	 * Sub Steps
 	 *
 	 * @since 0.1.0
-	 * @var string
 	 */
-	protected $exit_link;
+	private $sub_steps = array();
 
 	/**
 	 * Notices
@@ -69,9 +76,6 @@ class MMT_Wizard {
 			return;
 		}
 
-		// Exit Link
-		$this->exit_link = esc_url( add_query_arg( array( 'page' => 'mmt' ), admin_url( 'tools.php' ) ) );
-
 		// Steps.
 		$this->steps = apply_filters( 'mmt_wizard_steps', array(
 			'start'    => array(
@@ -85,9 +89,29 @@ class MMT_Wizard {
 				'handler' => array( $this, 'setup_migration_handler' ),
 			),
 			'users'    => array(
-				'name'    => __( 'Users', 'mmt' ),
-				'view'    => array( $this, 'users_migration' ),
-				'handler' => array( $this, 'users_migration_handler' ),
+				'name'      => __( 'Users', 'mmt' ),
+				'sub_steps' => apply_filters( 'mmtm_wizard_users_sub_steps', array(
+					'users'          => array(
+						'name'    => __( 'Users', 'mmt' ),
+						'view'    => array( $this, 'users_migration_start' ),
+						'handler' => array( $this, 'users_migration_start_handler' ),
+					),
+					'user_get_count' => array(
+						'name'    => __( 'Get Users', 'mmt' ),
+						'view'    => array( $this, 'user_get_count' ),
+						'handler' => array( $this, 'user_get_count_handler' ),
+					),
+					'user_conflicts' => array(
+						'name'    => __( 'User Conflicts', 'mmt' ),
+						'view'    => array( $this, 'user_conflicts' ),
+						'handler' => array( $this, 'user_conflicts_handler' ),
+					),
+					'users_complete' => array(
+						'name'    => __( 'Finish', 'mmt' ),
+						'view'    => array( $this, 'users_complete' ),
+						'handler' => array( $this, 'users_complete_handler' ),
+					),
+				) ),
 			),
 			'terms'    => array(
 				'name'    => __( 'Terms', 'mmt' ),
@@ -114,6 +138,14 @@ class MMT_Wizard {
 		// Get Step
 		$this->step = isset( $_GET['step'] ) ? sanitize_key( $_GET['step'] ) : current( array_keys( $this->steps ) ); // Input var ok.
 
+		// Sub Steps
+		$this->sub_steps = isset( $this->steps[ $this->step ]['sub_steps'] ) ? $this->steps[ $this->step ]['sub_steps'] : ''; // Input var ok.
+
+		// Sub Step
+		if ( ! empty( $this->sub_steps ) ) {
+			$this->sub_step = ( isset( $_GET['sub-step'] ) ) ? sanitize_key( $_GET['sub-step'] ) : current( array_keys( $this->sub_steps ) ); // Input var ok.
+		}
+
 		// Suffix
 		$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) || ( defined( 'MMT_DEBUG' ) && MMT_DEBUG ) ? '' : '.min';
 
@@ -127,6 +159,11 @@ class MMT_Wizard {
 		// Handle Notices
 		$this->handle_notices();
 
+		// Call function based on post sub step
+		if ( ! empty( $_POST['save_sub_step'] ) && check_admin_referer( 'mmt-wizard', 'security' ) && isset( $this->sub_steps[ $this->sub_step ]['handler'] ) ) { // Input var ok.
+			call_user_func( $this->sub_steps[ $this->sub_step ]['handler'] );
+		}
+
 		// Call function based on post step
 		if ( ! empty( $_POST['save_step'] ) && check_admin_referer( 'mmt-wizard', 'security' ) && isset( $this->steps[ $this->step ]['handler'] ) ) { // Input var ok.
 			call_user_func( $this->steps[ $this->step ]['handler'] );
@@ -136,6 +173,7 @@ class MMT_Wizard {
 		ob_start();
 		$this->header();
 		$this->steps();
+		// $this->sub_steps();
 		$this->step_content();
 		$this->footer();
 		exit;
@@ -190,14 +228,37 @@ class MMT_Wizard {
 	}
 
 	/**
+	 * Wizard Sub Steps
+	 *
+	 * @since 0.1.0
+	 */
+	public function sub_steps() {
+		if ( ! empty( $this->sub_steps ) ) {
+			$sub_steps = $this->sub_steps;
+			array_shift( $sub_steps );
+			?>
+			<ol class="mmt-steps mmt-sub-steps">
+				<?php foreach ( $sub_steps as $sub_step_key => $sub_step ) { ?>
+					<li class="<?php echo ( $sub_step_key === $this->sub_step ) ? 'active' : ''; ?>"><?php echo esc_html( $sub_step['name'] ); ?></li>
+				<?php } ?>
+			</ol>
+			<?php
+		}
+	}
+
+	/**
 	 * Wizard Step Content
 	 *
 	 * @since 0.1.0
 	 */
 	public function step_content() {
 		echo '<div class="mmt-content">';
-			$this->display_notices();
+		$this->display_notices();
+		if ( ! empty( $this->sub_step ) ) {
+			call_user_func( $this->sub_steps[ $this->sub_step ]['view'] );
+		} else {
 			call_user_func( $this->steps[ $this->step ]['view'] );
+		}
 		echo '</div>';
 	}
 
@@ -226,7 +287,7 @@ class MMT_Wizard {
 		<p><?php esc_html_e( 'To start using the merge migration tool, press the Get Started button below.', 'mmt' ); ?></p>
 		<p class="mmt-actions step">
 			<a href="<?php echo esc_url( $this->get_next_step_link() ); ?>" class="button-primary button button-large button-next"><?php esc_attr_e( 'Get Started', 'mmt' ); ?></a>
-			<a href="<?php echo esc_url( $this->exit_link ); ?>" class="button button-large"><?php esc_html_e( 'Back', 'mmt' ); ?></a>
+			<a href="<?php echo esc_url( $this->get_exit_link() ); ?>" class="button button-large"><?php esc_html_e( 'Exit', 'mmt' ); ?></a>
 		</p>
 		<?php
 	}
@@ -311,20 +372,20 @@ class MMT_Wizard {
 	}
 
 	/**
-	 * Users Migration
+	 * Users - Start Migration
 	 *
 	 * @since 0.1.0
 	 */
-	public function users_migration() {
+	public function users_migration_start() {
 		$url = MMT_API::get_remote_url();
 		?>
-		<h1><?php esc_attr_e( 'Users Migration', 'mmt' ); ?></h1>
+		<h1><?php esc_attr_e( 'Start Users Migration', 'mmt' ); ?></h1>
 		<form method="post">
-			<p><?php esc_html_e( 'During the next few steps, this tool will migrate all non-conflicting users from the following site:', 'mmt' ); ?></p>
+			<p><?php esc_html_e( 'During the next few steps, this tool will migrate all users from the following site:', 'mmt' ); ?></p>
 			<p><?php printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url ), esc_url( $url ) ); ?></p>
 			<p><?php esc_html_e( 'To continue, please click the button below.', 'mmt' ); ?></p>
 			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Start Migration', 'mmt' ); ?>" name="save_step"/>
+				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
 				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php wp_nonce_field( 'mmt-wizard', 'security' ); ?>
 			</p>
@@ -333,28 +394,29 @@ class MMT_Wizard {
 	}
 
 	/**
-	 * User Migration Handler
+	 * Users - Start Migration Handler
 	 *
 	 * @since 0.1.0
 	 */
-	public function users_migration_handler() {
+	public function users_migration_start_handler() {
 		check_admin_referer( 'mmt-wizard', 'security' );
 		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
 		exit;
 	}
 
 	/**
-	 * Users Step One
+	 * Users - List
 	 *
 	 * @since 0.1.0
 	 */
-	public function users_step_one() {
+	public function user_get_count() {
+		$user_count = '54';
 		?>
-		<h1><?php esc_attr_e( 'User Migration Step #1', 'mmt' ); ?></h1>
+		<h1><?php esc_attr_e( 'Users', 'mmt' ); ?></h1>
 		<form method="post">
-			<p><?php esc_html_e( 'This is step one.', 'mmt' ); ?></p>
+			<p><?php echo sprintf( esc_html__( 'We found %s users to be migrated.', 'mmt' ), '<strong>' . esc_attr( $user_count ) . '</strong>' ); ?></p>
 			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Migrate Users', 'mmt' ); ?>" name="save_sub_step"/>
+				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
 				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php wp_nonce_field( 'mmt-wizard', 'security' ); ?>
 			</p>
@@ -363,11 +425,72 @@ class MMT_Wizard {
 	}
 
 	/**
-	 * Users Step One - Handler
+	 * Users - List Handler
 	 *
 	 * @since 0.1.0
 	 */
-	public function users_step_one_handler() {
+	public function user_get_count_handler() {
+		check_admin_referer( 'mmt-wizard', 'security' );
+		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
+		exit;
+	}
+
+	/**
+	 * Users - Conflicts
+	 *
+	 * @since 0.1.0
+	 */
+	public function user_conflicts() {
+		$conflicting_users = '54';
+		?>
+		<h1><?php esc_attr_e( 'User Conflicts', 'mmt' ); ?></h1>
+		<form method="post">
+			<p><?php echo sprintf( esc_html__( 'We found %s users to that conflicted. They are listed below.', 'mmt' ), '<strong>' . esc_attr( $conflicting_users ) . '</strong>' ); ?></p>
+			<p class="mmt-actions step">
+				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
+				<?php wp_nonce_field( 'mmt-wizard', 'security' ); ?>
+			</p>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Users - Conflicts Handler
+	 *
+	 * @since 0.1.0
+	 */
+	public function user_conflicts_handler() {
+		check_admin_referer( 'mmt-wizard', 'security' );
+		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
+		exit;
+	}
+
+	/**
+	 * Users - Complete
+	 *
+	 * @since 0.1.0
+	 */
+	public function users_complete() {
+		?>
+		<h1><?php esc_attr_e( 'User Migration Complete', 'mmt' ); ?></h1>
+		<form method="post">
+			<p><?php echo esc_html_e( 'Congragulations! The user migration is complete. Please continue below.', 'mmt' ); ?></p>
+			<p class="mmt-actions step">
+				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
+				<?php wp_nonce_field( 'mmt-wizard', 'security' ); ?>
+			</p>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Users - Complete Handler
+	 *
+	 * @since 0.1.0
+	 */
+	public function users_complete_handler() {
 		check_admin_referer( 'mmt-wizard', 'security' );
 		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
 		exit;
@@ -469,10 +592,40 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 */
 	public function complete_migration() {
-		?><h1><?php esc_attr_e( 'Migration Complete!', 'mmt' ); ?></h1><?php
+		?>
+		<h1><?php esc_attr_e( 'Migration Complete!', 'mmt' ); ?></h1>
+		<p><?php esc_html_e( 'Congragulations! The migration is now complete.', 'mmt' ); ?></p>
+		<p class="mmt-actions step">
+			<a href="<?php echo esc_url( $this->get_start_step_link() ); ?>" class="button button-primary button-large button-next"><?php esc_attr_e( 'Start Over', 'mmt' ); ?></a>
+			<a href="<?php echo esc_url( $this->get_exit_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Exit', 'mmt' ); ?></a>
+			<?php wp_nonce_field( 'mmt-wizard', 'security' ); ?>
+		</p>
+		<?php
 	}
 
 	/** Utilities -------------------- */
+
+	/**
+	 * Get Start Step Link
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public function get_start_step_link() {
+		return remove_query_arg( array( 'wizard-notice', 'sub-step' ), add_query_arg( 'step', current( array_keys( $this->steps ) ) ) );
+	}
+
+	/**
+	 * Get Exit Link
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public function get_exit_link() {
+		return add_query_arg( array( 'page' => 'mmt' ), admin_url( 'tools.php' ) );
+	}
 
 	/**
 	 * Get Step Link
@@ -488,6 +641,19 @@ class MMT_Wizard {
 	}
 
 	/**
+	 * Get Sub Step Link
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param string $sub_step_key The sub step key.
+	 *
+	 * @return string
+	 */
+	public function get_sub_step_link( $sub_step_key ) {
+		return add_query_arg( 'sub-step', $sub_step_key );
+	}
+
+	/**
 	 * Get Current Step Link
 	 *
 	 * @since 0.1.0
@@ -496,6 +662,14 @@ class MMT_Wizard {
 	 */
 	public function get_current_step_link() {
 		$keys = array_keys( $this->steps );
+
+		if ( ! empty( $this->sub_steps ) ) {
+			$sub_keys = array_key( $this->sub_steps );
+
+			if ( isset( $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) ] ) ) {
+				return remove_query_arg( 'wizard-notice', add_query_arg( 'sub-step', $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) + 1 ] ) );
+			}
+		}
 
 		return remove_query_arg( array( 'wizard-notice', 'sub-step' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) ] ) );
 	}
@@ -512,7 +686,15 @@ class MMT_Wizard {
 	public function get_prev_step_link( $step_offset = 1 ) {
 		$keys = array_keys( $this->steps );
 
-		return remove_query_arg( array( 'wizard-notice' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) - $step_offset ] ) );
+		if ( ! empty( $this->sub_steps ) ) {
+			$sub_keys = array_keys( $this->sub_steps );
+
+			if ( isset( $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) - $step_offset ] ) ) {
+				return remove_query_arg( 'wizard-notice', add_query_arg( 'sub-step', $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) - $step_offset ] ) );
+			}
+		}
+
+		return remove_query_arg( array( 'wizard-notice', 'sub-step' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) - $step_offset ] ) );
 	}
 
 	/**
@@ -527,11 +709,19 @@ class MMT_Wizard {
 	public function get_next_step_link( $step_offset = 1 ) {
 		$keys = array_keys( $this->steps );
 
-		return remove_query_arg( array( 'wizard-notice' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) + $step_offset ] ) );
+		if ( ! empty( $this->sub_steps ) ) {
+			$sub_keys = array_keys( $this->sub_steps );
+
+			if ( isset( $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) + $step_offset ] ) ) {
+				return remove_query_arg( 'wizard-notice', add_query_arg( 'sub-step', $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) + $step_offset ] ) );
+			}
+		}
+
+		return remove_query_arg( array( 'wizard-notice', 'sub-step' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) + $step_offset ] ) );
 	}
 
 	/**
-	 * Get Notice Link
+	 * Display Notice
 	 *
 	 * @since 0.1.0
 	 */
@@ -541,6 +731,14 @@ class MMT_Wizard {
 		}
 
 		$keys = array_keys( $this->steps );
+
+		if ( ! empty( $this->sub_steps ) ) {
+			$sub_keys = array_keys( $this->sub_steps );
+
+			if ( isset( $sub_keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) ] ) ) {
+				return add_query_arg( array( 'sub-step' => $keys[ array_search( $this->sub_step, array_keys( $this->sub_steps ), true ) ], 'wizard-notice' => $notice ) );
+			}
+		}
 
 		return add_query_arg( array( 'step' => $keys[ array_search( $this->step, array_keys( $this->steps ), true ) ], 'wizard-notice' => $notice ) );
 	}
