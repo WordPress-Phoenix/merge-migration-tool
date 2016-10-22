@@ -409,31 +409,61 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 */
 	public function users_process() {
-		$conflicted_users  = MMT_API::get_users_conflict_collection();
+		$conflicted_users  = MMT_API::get_users_conflicted_collection();
 		$migrateable_users = MMT_API::get_users_migratable_collection();
+		$referenced_users  = MMT_API::get_users_referenced_collection();
 		?>
 		<h1><?php esc_attr_e( 'Users List', 'mmt' ); ?></h1>
 		<form method="post">
 			<?php if ( $migrateable_users ) { ?>
-				<h4><?php esc_html_e( 'Users available to be migrated:', 'mmt' ); ?></h4>
+				<h3><?php esc_html_e( 'Users that will be migrated:', 'mmt' ); ?></h3>
+
 				<div class="mmt-users-list-overflow">
 					<?php foreach ( $migrateable_users as $migrateable_user ) { ?>
 						<div class="mmt-user-item"><?php printf( '%s (%s)', esc_attr( $migrateable_user['user']['username'] ), esc_attr( $migrateable_user['user']['email'] ) ); ?></div>
 					<?php } ?>
 				</div>
 			<?php } ?>
+			<?php if ( $referenced_users ) { ?>
+				<h3><?php esc_html_e( 'Users that will be referenced:', 'mmt' ); ?></h3>
+				<div class="mmt-users-list-overflow">
+					<?php foreach ( $referenced_users as $referenced_user ) { ?>
+						<div class="mmt-user-item">
+							<?php
+							printf(
+								'%s: %s (%s) <br /> %s: %s (%s) <br /> %s: %s <br /><br />',
+								esc_attr__( 'Remote', 'mmt' ),
+								esc_attr( $referenced_user['user']['username'] ),
+								esc_attr( $referenced_user['user']['email'] ),
+								esc_attr__( 'Local', 'mmt' ),
+								esc_attr( $referenced_user['current_user']->user_login ),
+								esc_attr( $referenced_user['current_user']->user_email ),
+								esc_attr__( 'Conflict', 'mmt' ),
+								esc_attr( $referenced_user['conflict'] )
+							);
+							?>
+						</div>
+					<?php } ?>
+				</div>
+			<?php } ?>
 			<?php if ( $conflicted_users ) { ?>
-				<h4><?php esc_html_e( 'Users that have conflicts:', 'mmt' ); ?></h4>
+				<h3><?php esc_html_e( 'Users that have conflicts:', 'mmt' ); ?></h3>
 				<p><?php esc_html_e( 'Please copy this list. These users will not be migrated.', 'mmt' ); ?></p>
 				<div class="mmt-users-list-overflow">
 					<?php foreach ( $conflicted_users as $conflicted_user ) { ?>
 						<div class="mmt-user-item">
 							<?php
-							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Current User', 'mmt' ), esc_attr( $conflicted_user['current_user']->user_login ), esc_attr( $conflicted_user['current_user']->user_email ) );
-							?>
-							<br/>
-							<?php
-							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Remote User', 'mmt' ), esc_attr( $conflicted_user['user']['username'] ), esc_attr( $conflicted_user['user']['email'] ) );
+							printf(
+								'%s: %s (%s) <br /> %s: %s (%s) <br /><br /> %s: %s',
+								esc_attr__( 'Local', 'mmt' ),
+								esc_attr( $conflicted_user['current_user']->user_login ),
+								esc_attr( $conflicted_user['current_user']->user_email ),
+								esc_attr__( 'Remote', 'mmt' ),
+								esc_attr( $conflicted_user['user']['username'] ),
+								esc_attr( $conflicted_user['user']['email'] ),
+								esc_attr__( 'Conflict', 'mmt' ),
+								esc_attr( $conflicted_user['conflict'] )
+							);
 							?>
 						</div>
 						<br/>
@@ -458,38 +488,8 @@ class MMT_Wizard {
 		check_admin_referer( 'mmt-wizard', 'security' );
 
 		MMT_API::migrate_users();
+		MMT_API::migrate_referenced_users();
 
-		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
-		exit;
-	}
-
-	/**
-	 * Users - Conflicts
-	 *
-	 * @since 0.1.0
-	 */
-	public function user_conflicts() {
-		$conflicting_users = '54';
-		?>
-		<h1><?php esc_attr_e( 'User Conflicts', 'mmt' ); ?></h1>
-		<form method="post">
-			<p><?php echo sprintf( esc_html__( 'We found %s users to that conflicted. They are listed below.', 'mmt' ), '<strong>' . esc_attr( $conflicting_users ) . '</strong>' ); ?></p>
-			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
-				<a href="<?php echo esc_url( $this->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
-				<?php wp_nonce_field( 'mmt-wizard', 'security' ); ?>
-			</p>
-		</form>
-		<?php
-	}
-
-	/**
-	 * Users - Conflicts Handler
-	 *
-	 * @since 0.1.0
-	 */
-	public function user_conflicts_handler() {
-		check_admin_referer( 'mmt-wizard', 'security' );
 		wp_safe_redirect( esc_url_raw( $this->get_next_step_link() ) );
 		exit;
 	}
@@ -500,31 +500,71 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 */
 	public function users_complete() {
-		$conflicted_users = MMT_API::get_users_conflict_collection();
+		$conflicted_users = MMT_API::get_users_conflicted_collection();
 		$migrated_users   = MMT_API::get_migrated_users();
+		$referenced_users = MMT_API::get_migrated_users_referenced();
 		?>
 		<h1><?php esc_attr_e( 'User Migration Complete!', 'mmt' ); ?></h1>
 		<form method="post">
-			<p><?php echo esc_html_e( 'Congragulations! The user migration is complete. Below are the users that were migrated:', 'mmt' ); ?></p>
+			<p><?php echo esc_html_e( 'Congragulations! The Users migration is complete.', 'mmt' ); ?></p>
 			<?php if ( $migrated_users ) { ?>
-				<h4><?php esc_html_e( 'Users that have conflicts', 'mmt' ); ?></h4>
+				<h3><?php esc_html_e( 'Migrated Users', 'mmt' ); ?></h3>
+				<p><?php esc_html_e( 'The users below were migrated to the current site.', 'mmt' ); ?></p>
 				<div class="mmt-users-list-overflow">
 					<?php foreach ( $migrated_users as $migrated_user ) { ?>
-						<div class="mmt-user-item"><?php printf( '%s (%s)', esc_attr( $migrated_user->user_login ), esc_attr( $migrate_user->user_email ) ); ?></div>
+						<div class="mmt-user-item">
+							<?php
+							printf(
+								'%s (%s)',
+								esc_attr( $migrated_user->user_login ),
+								esc_attr( $migrate_user->user_email )
+							);
+							?>
+						</div>
+					<?php } ?>
+				</div>
+			<?php } ?>
+			<?php if ( $referenced_users ) { ?>
+				<h3><?php esc_html_e( 'Referenced Users', 'mmt' ); ?></h3>
+				<p><?php esc_html_e( 'The users below were referenced to a current user on this site based on a conflict.', 'mmt' ); ?></p>
+				<div class="mmt-users-list-overflow">
+					<?php foreach ( $referenced_users as $referenced_user ) { ?>
+						<div class="mmt-user-item">
+							<?php
+							printf(
+								'%s: %s (%s) <br /> %s: %s (%s) <br /> %s: %s <br /><br />',
+								esc_attr__( 'Remote', 'mmt' ),
+								esc_attr( $referenced_user['user']['username'] ),
+								esc_attr( $referenced_user['user']['email'] ),
+								esc_attr__( 'Local', 'mmt' ),
+								esc_attr( $referenced_user['current_user']->user_login ),
+								esc_attr( $referenced_user['current_user']->user_email ),
+								esc_attr__( 'Conflict', 'mmt' ),
+								esc_attr( $referenced_user['conflict'] )
+							);
+							?>
+						</div>
 					<?php } ?>
 				</div>
 			<?php } ?>
 			<?php if ( $conflicted_users ) { ?>
-				<p><?php esc_html_e( 'For your reference, these were the users that were not migrated.', 'mmt' ); ?></p>
+				<h3><?php esc_html_e( 'Conflicted Users', 'mmt' ); ?></h3>
+				<p><?php esc_html_e( 'The users below were not transfered to this site based on a conflict.', 'mmt' ); ?></p>
 				<div class="mmt-users-list-overflow">
 					<?php foreach ( $conflicted_users as $conflicted_user ) { ?>
 						<div class="mmt-user-item">
 							<?php
-							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Current User', 'mmt' ), esc_attr( $conflicted_user['current_user']->user_login ), esc_attr( $conflicted_user['current_user']->user_email ) );
-							?>
-							<br/>
-							<?php
-							printf( '<strong>%s</strong>: %s (%s)', esc_attr__( 'Remote User', 'mmt' ), esc_attr( $conflicted_user['user']['username'] ), esc_attr( $conflicted_user['user']['email'] ) );
+							printf(
+								'%s: %s (%s) <br /> %s: %s (%s) <br /><br /> %s: %s',
+								esc_attr__( 'Local', 'mmt' ),
+								esc_attr( $conflicted_user['current_user']->user_login ),
+								esc_attr( $conflicted_user['current_user']->user_email ),
+								esc_attr__( 'Remote', 'mmt' ),
+								esc_attr( $conflicted_user['user']['username'] ),
+								esc_attr( $conflicted_user['user']['email'] ),
+								esc_attr__( 'Conflict', 'mmt' ),
+								esc_attr( $conflicted_user['conflict'] )
+							);
 							?>
 						</div>
 						<br/>

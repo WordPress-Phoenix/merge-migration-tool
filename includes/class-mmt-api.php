@@ -299,7 +299,10 @@ class MMT_API {
 	public static function clear_data() {
 		delete_transient( 'mmt_users' );
 		delete_transient( 'mmt_users_conflicted' );
+		delete_transient( 'mmt_users_referenced' );
 		delete_transient( 'mmt_users_migrateable' );
+		delete_transient( 'mmt_users_migrated' );
+		delete_transient( 'mmt_users_migrated_referenced' );
 	}
 
 	/**
@@ -354,11 +357,13 @@ class MMT_API {
 
 		// Clear stale data
 		delete_transient( 'mmt_users_conflicted' );
+		delete_transient( 'mmt_users_referenced' );
 		delete_transient( 'mmt_users_migrateable' );
 
 		// Define collection holders
 		$current_site_users = array();
 		$conflicted_users   = array();
+		$referenced_users   = array();
 		$migrateable_users  = array();
 
 		// Get Current Site Users
@@ -374,21 +379,35 @@ class MMT_API {
 		// Check for confligcts
 		foreach ( $remote_users as $remote_user ) {
 
+			// Search to see if they match
+			$match_username = array_search( $remote_user['username'], array_column( $current_site_users, 'username' ), true );
+			$match_email    = array_search( $remote_user['email'], array_column( $current_site_users, 'email' ), true );
+
+			// Both Conflict
+			if ( ( false !== $match_username ) && ( false !== $match_email ) ) {
+				$referenced_users[] = array(
+					'user'         => $remote_user,
+					'current_user' => $current_site_users[ $match_username ]['user'],
+					'conflict'     => 'username_and_email',
+				);
+				continue;
+			}
+
 			// Username Conflict.
-			if ( false !== ( $conflict_key = array_search( $remote_user['username'], array_column( $current_site_users, 'username' ), true ) ) ) {
+			if ( false !== $match_username ) {
 				$conflicted_users[] = array(
 					'user'         => $remote_user,
-					'current_user' => $current_site_users[ $conflict_key ]['user'],
+					'current_user' => $current_site_users[ $match_username ]['user'],
 					'conflict'     => 'username',
 				);
 				continue;
 			}
 
 			// Email Conflict.
-			if ( false !== ( $conflict_key = array_search( $remote_user['email'], array_column( $current_site_users, 'email' ), true ) ) ) {
-				$migrateable_users[] = array(
+			if ( false !== $match_email ) {
+				$referenced_users[] = array(
 					'user'         => $remote_user,
-					'current_user' => $current_site_users[ $conflict_key ]['user'],
+					'current_user' => $current_site_users[ $match_email ]['user'],
 					'conflict'     => 'email',
 				);
 				continue;
@@ -400,17 +419,18 @@ class MMT_API {
 
 		// Set Transients for later
 		set_transient( 'mmt_users_conflicted', $conflicted_users, DAY_IN_SECONDS );
+		set_transient( 'mmt_users_referenced', $referenced_users, DAY_IN_SECONDS );
 		set_transient( 'mmt_users_migrateable', $migrateable_users, DAY_IN_SECONDS );
 	}
 
 	/**
-	 * Get Users Conflict Collection
+	 * Get Users Conflicted Collection
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return array
 	 */
-	public static function get_users_conflict_collection() {
+	public static function get_users_conflicted_collection() {
 		if ( false === ( $conflicting_users = get_transient( 'mmt_users_conflicted' ) ) ) {
 			self::create_users_collection();
 			$conflicting_users = get_transient( 'mmt_users_conflicted' );
@@ -436,11 +456,27 @@ class MMT_API {
 	}
 
 	/**
-	 * Migrate Users
+	 * Get Users Referenced Collection
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param array $users The users to be migrated.
+	 * @return array
+	 */
+	public static function get_users_referenced_collection() {
+		if ( false === ( $referenced_users = get_transient( 'mmt_users_referenced' ) ) ) {
+			self::create_users_collection();
+			$referenced_users = get_transient( 'mmt_users_referenced' );
+		}
+
+		return $referenced_users;
+	}
+
+	/**
+	 * Migrate Referenced Users
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array $users The users to be referenced.
 	 *
 	 * @return array $created_users The created users.
 	 */
@@ -485,6 +521,46 @@ class MMT_API {
 	}
 
 	/**
+	 * Migrate Users
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array $users The users to be migrated.
+	 *
+	 * @return array $created_users The created users.
+	 */
+	public static function migrate_referenced_users( $users = array() ) {
+		if ( empty( $users ) ) {
+			$users = self::get_users_referenced_collection();
+		}
+
+		$migrated_users = array();
+
+		foreach ( $users as $user ) {
+			$conflict     = $user['conflict'];
+			$current_user = $user['current_user'];
+			$user         = $user['user'];
+
+			if ( is_a( $current_user, 'WP_User' ) ) {
+				update_user_meta( $current_user->ID, 'mmt_reference_user_id', $user['id'] );
+				update_user_meta( $current_user->ID, 'mmt_reference_user_object', $user );
+			}
+
+			$migrated_users[] = array(
+				'user'         => $user,
+				'current_user' => $current_user,
+				'conflict'     => $conflict,
+			);
+		}
+
+		if ( ! empty( $migrated_users ) ) {
+			set_transient( 'mmt_users_migrated_referenced', $migrated_users, DAY_IN_SECONDS );
+		}
+
+		return $migrated_users;
+	}
+
+	/**
 	 * Get Migrated Users
 	 *
 	 * @since 0.1.0
@@ -493,6 +569,17 @@ class MMT_API {
 	 */
 	public static function get_migrated_users() {
 		return ( false !== ( $users = get_transient( 'mmt_users_migrated' ) ) ) ? $users : array();
+	}
+
+	/**
+	 * Get Migrated Users
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array $migrated_users The users that were migrated.
+	 */
+	public static function get_migrated_users_referenced() {
+		return ( false !== ( $users = get_transient( 'mmt_users_migrated_referenced' ) ) ) ? $users : array();
 	}
 
 	/**
