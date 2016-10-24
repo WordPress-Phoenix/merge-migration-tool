@@ -141,13 +141,13 @@ class MMT_API {
 	 * Get REST API Migration Key
 	 *
 	 * @static
-	 * @access private
+	 * @access protected
 	 *
 	 * @since  0.1.0
 	 *
 	 * @return string
 	 */
-	private static function get_migration_key() {
+	protected static function get_migration_key() {
 		return get_option( 'mmt_key' );
 	}
 
@@ -233,7 +233,7 @@ class MMT_API {
 	 *
 	 * @return string $key
 	 */
-	private static function hash_key( $key ) {
+	protected static function hash_key( $key ) {
 		return hash_hmac( 'md5', $key, '292366AFF23AA43A31BBB6E48CAD2' );
 	}
 
@@ -291,21 +291,6 @@ class MMT_API {
 	}
 
 	/**
-	 * Clear Data
-	 *
-	 * @static
-	 * @since 1.0.0
-	 */
-	public static function clear_data() {
-		delete_transient( 'mmt_users' );
-		delete_transient( 'mmt_users_conflicted' );
-		delete_transient( 'mmt_users_referenced' );
-		delete_transient( 'mmt_users_migrateable' );
-		delete_transient( 'mmt_users_migrated' );
-		delete_transient( 'mmt_users_migrated_referenced' );
-	}
-
-	/**
 	 * Verify REST API Access
 	 *
 	 * @static
@@ -321,281 +306,6 @@ class MMT_API {
 		}
 
 		return esc_attr( $data['access'] );
-	}
-
-	/**
-	 * Get REST API Users
-	 *
-	 * @static
-	 * @since 1.0.0
-	 *
-	 * @return array
-	 */
-	public static function get_users() {
-		if ( false === ( $users = get_transient( 'mmt_users' ) ) ) {
-			$users = self::get_data( 'users' );
-			set_transient( 'mmt_users', $users, DAY_IN_SECONDS );
-		}
-
-		return $users;
-	}
-
-	/**
-	 * Create Users Collection
-	 *
-	 * @static
-	 * @since 0.1.0
-	 *
-	 * @param array $remote_users The remote users array.
-	 *
-	 * @return array
-	 */
-	public static function create_users_collection( $remote_users = array() ) {
-		if ( empty( $remote_users ) ) {
-			$remote_users = self::get_users();
-		}
-
-		// Clear stale data
-		delete_transient( 'mmt_users_conflicted' );
-		delete_transient( 'mmt_users_referenced' );
-		delete_transient( 'mmt_users_migrateable' );
-
-		// Define collection holders
-		$current_site_users = array();
-		$conflicted_users   = array();
-		$referenced_users   = array();
-		$migrateable_users  = array();
-
-		// Get Current Site Users
-		$current_users_query = new WP_User_Query( array( 'number' => - 1 ) );
-		foreach ( $current_users_query->get_results() as $user ) {
-			$current_site_users[] = array(
-				'username' => $user->user_login,
-				'email'    => $user->user_email,
-				'user'     => $user,
-			);
-		}
-
-		// Check for confligcts
-		foreach ( $remote_users as $remote_user ) {
-
-			// Search to see if they match
-			$match_username = array_search( $remote_user['username'], array_column( $current_site_users, 'username' ), true );
-			$match_email    = array_search( $remote_user['email'], array_column( $current_site_users, 'email' ), true );
-
-			// Both Conflict
-			if ( ( false !== $match_username ) && ( false !== $match_email ) ) {
-				$referenced_users[] = array(
-					'user'         => $remote_user,
-					'current_user' => $current_site_users[ $match_username ]['user'],
-					'conflict'     => 'username_and_email',
-				);
-				continue;
-			}
-
-			// Username Conflict.
-			if ( false !== $match_username ) {
-				$conflicted_users[] = array(
-					'user'         => $remote_user,
-					'current_user' => $current_site_users[ $match_username ]['user'],
-					'conflict'     => 'username',
-				);
-				continue;
-			}
-
-			// Email Conflict.
-			if ( false !== $match_email ) {
-				$referenced_users[] = array(
-					'user'         => $remote_user,
-					'current_user' => $current_site_users[ $match_email ]['user'],
-					'conflict'     => 'email',
-				);
-				continue;
-			}
-
-			// No username or email conflicts.
-			$migrateable_users[] = array( 'user' => $remote_user );
-		}
-
-		// Set Transients for later
-		set_transient( 'mmt_users_conflicted', $conflicted_users, DAY_IN_SECONDS );
-		set_transient( 'mmt_users_referenced', $referenced_users, DAY_IN_SECONDS );
-		set_transient( 'mmt_users_migrateable', $migrateable_users, DAY_IN_SECONDS );
-	}
-
-	/**
-	 * Get Users Conflicted Collection
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public static function get_users_conflicted_collection() {
-		if ( false === ( $conflicting_users = get_transient( 'mmt_users_conflicted' ) ) ) {
-			self::create_users_collection();
-			$conflicting_users = get_transient( 'mmt_users_conflicted' );
-		}
-
-		return $conflicting_users;
-	}
-
-	/**
-	 * Get Users Conflict Collection
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public static function get_users_migratable_collection() {
-		if ( false === ( $migrateable_users = get_transient( 'mmt_users_migrateable' ) ) ) {
-			self::create_users_collection();
-			$migrateable_users = get_transient( 'mmt_users_migrateable' );
-		}
-
-		return $migrateable_users;
-	}
-
-	/**
-	 * Get Users Referenced Collection
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public static function get_users_referenced_collection() {
-		if ( false === ( $referenced_users = get_transient( 'mmt_users_referenced' ) ) ) {
-			self::create_users_collection();
-			$referenced_users = get_transient( 'mmt_users_referenced' );
-		}
-
-		return $referenced_users;
-	}
-
-	/**
-	 * Migrate Referenced Users
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param array $users The users to be referenced.
-	 *
-	 * @return array $created_users The created users.
-	 */
-	public static function migrate_users( $users = array() ) {
-		if ( empty( $users ) ) {
-			$users = self::get_users_migratable_collection();
-		}
-
-		$migrated_users = array();
-
-		foreach ( $users as $user ) {
-			$user     = $user['user'];
-			$userdata = array(
-				'user_login'      => $user['username'],
-				'user_url'        => $user['url'],
-				'user_email'      => $user['email'],
-				'first_name'      => $user['first_name'],
-				'last_name'       => $user['last_name'],
-				'user_pass'       => null,
-				'display_name'    => $user['name'],
-				'description'     => $user['description'],
-				'nickname'        => $user['nickname'],
-				'user_nicename'   => $user['slug'],
-				'user_registered' => $user['registered_date'],
-			);
-
-			$user_id = wp_insert_user( $userdata );
-
-			if ( is_wp_error( $user_id ) ) {
-				MMT::debug( $user_id->get_error_message() );
-				continue;
-			}
-
-			$migrated_users[] = new WP_User( $user_id );
-		}
-
-		if ( ! empty( $migrated_users ) ) {
-			set_transient( 'mmt_users_migrated', $migrated_users, DAY_IN_SECONDS );
-		}
-
-		return $migrated_users;
-	}
-
-	/**
-	 * Migrate Users
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param array $users The users to be migrated.
-	 *
-	 * @return array $created_users The created users.
-	 */
-	public static function migrate_referenced_users( $users = array() ) {
-		if ( empty( $users ) ) {
-			$users = self::get_users_referenced_collection();
-		}
-
-		$migrated_users = array();
-
-		foreach ( $users as $user ) {
-			$conflict     = $user['conflict'];
-			$current_user = $user['current_user'];
-			$user         = $user['user'];
-
-			if ( is_a( $current_user, 'WP_User' ) ) {
-				update_user_meta( $current_user->ID, 'mmt_reference_user_id', $user['id'] );
-				update_user_meta( $current_user->ID, 'mmt_reference_user_object', $user );
-			}
-
-			$migrated_users[] = array(
-				'user'         => $user,
-				'current_user' => $current_user,
-				'conflict'     => $conflict,
-			);
-		}
-
-		if ( ! empty( $migrated_users ) ) {
-			set_transient( 'mmt_users_migrated_referenced', $migrated_users, DAY_IN_SECONDS );
-		}
-
-		return $migrated_users;
-	}
-
-	/**
-	 * Get Migrated Users
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array $migrated_users The users that were migrated.
-	 */
-	public static function get_migrated_users() {
-		return ( false !== ( $users = get_transient( 'mmt_users_migrated' ) ) ) ? $users : array();
-	}
-
-	/**
-	 * Get Migrated Users
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array $migrated_users The users that were migrated.
-	 */
-	public static function get_migrated_users_referenced() {
-		return ( false !== ( $users = get_transient( 'mmt_users_migrated_referenced' ) ) ) ? $users : array();
-	}
-
-	/**
-	 * Process User Object
-	 *
-	 * This will do functionality to add the user to the site.
-	 *
-	 * @static
-	 * @since 1.0.0
-	 *
-	 * @param object $user The user object.
-	 *
-	 * @return bool
-	 */
-	public static function process_user( $user ) {
-		return true;
 	}
 
 	/**

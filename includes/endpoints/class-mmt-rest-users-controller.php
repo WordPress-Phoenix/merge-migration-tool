@@ -96,6 +96,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 		);
 		$user_args['orderby']  = $orderby_possibles[ $request['orderby'] ];
 		$user_args['role__in'] = $request['roles'];
+		$user_args['fields']   = ( isset( $request['fields'] ) ) ? $request['fields'] : 'all';
 
 		/**
 		 * Filter User Query Arguments
@@ -171,7 +172,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 			return new WP_Error( 'rest_user_invalid_id', __( 'Invalid user id.', 'mmt' ), array( 'status' => 404 ) );
 		}
 
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_base );;
+		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_base );
 	}
 
 	/**
@@ -212,24 +213,38 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 
 		// Data
 		$data = array(
-			'id'                 => ( ! empty( $schema['properties']['id'] ) ) ? $user->ID : '',
-			'username'           => ( ! empty( $schema['properties']['username'] ) ) ? $user->user_login : '',
-			'name'               => ( ! empty( $schema['properties']['name'] ) ) ? $user->display_name : '',
-			'first_name'         => ( ! empty( $schema['properties']['first_name'] ) ) ? $user->first_name : '',
-			'last_name'          => ( ! empty( $schema['properties']['last_name'] ) ) ? $user->last_name : '',
-			'email'              => ( ! empty( $schema['properties']['email'] ) ) ? $user->user_email : '',
-			'url'                => ( ! empty( $schema['properties']['url'] ) ) ? $user->user_url : '',
-			'description'        => ( ! empty( $schema['properties']['description'] ) ) ? $user->description : '',
-			'link'               => ( ! empty( $schema['properties']['link'] ) ) ? get_author_posts_url( $user->ID, $user->user_nicename ) : '',
-			'nickname'           => ( ! empty( $schema['properties']['nickname'] ) ) ? $user->nickname : '',
-			'slug'               => ( ! empty( $schema['properties']['slug'] ) ) ? $user->user_nicename : '',
-			'role'               => ( ! empty( $schema['properties']['role'] ) ) ? $user->role : '',
-			'roles'              => ( ! empty( $schema['properties']['roles'] ) ) ? array_values( $user->roles ) : array(),
-			'registered_date'    => ( ! empty( $schema['properties']['registered_date'] ) ) ? date( 'c', strtotime( $user->user_registered ) ) : '',
-			'capabilities'       => ( ! empty( $schema['properties']['capabilities'] ) ) ? (object) $user->allcaps : '',
-			'extra_capabilities' => ( ! empty( $schema['properties']['extra_capabilities'] ) ) ? (object) $user->caps : '',
-			'avatar_urls'        => ( ! empty( $schema['properties']['avatar_urls'] ) ) ? rest_get_avatar_urls( $user->user_email ) : '',
+			'id'                 => $user->ID,
+			'username'           => $user->user_login,
+			'name'               => $user->display_name,
+			'first_name'         => $user->first_name,
+			'last_name'          => $user->last_name,
+			'email'              => $user->user_email,
+			'url'                => $user->user_url,
+			'description'        => $user->description,
+			'password'           => $user->user_pass,
+			'link'               => get_author_posts_url( $user->ID, $user->user_nicename ),
+			'nickname'           => $user->nickname,
+			'slug'               => $user->user_nicename,
+			'role'               => $user->role,
+			'roles'              => array_values( $user->roles ),
+			'registered_date'    => date( 'c', strtotime( $user->user_registered ) ),
+			'capabilities'       => (object) $user->allcaps,
+			'extra_capabilities' => (object) $user->caps,
+			'avatar_urls'        => rest_get_avatar_urls( $user->user_email ),
+			'meta'               => array(),
 		);
+
+		// Meta
+		$meta = array_map( function ( $a ) {
+			return $a[0];
+		}, get_user_meta( $user->ID ) );
+
+		// Populate Data
+		if ( $meta ) {
+			foreach ( $meta as $meta_key => $meta_value ) {
+				$data['meta'][ $meta_key ] = $meta_value;
+			}
+		}
 
 		// Context
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
@@ -386,18 +401,24 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 				'password'           => array(
 					'description' => __( 'Password for the user (never included).', 'mmt' ),
 					'type'        => 'string',
-					'context'     => array(), // Password is never displayed
+					'context'     => array( 'view' ), // Password is never displayed
 					'required'    => true,
 				),
 				'capabilities'       => array(
-					'description' => __( 'All capabilities assigned to the resource.', 'user' ),
+					'description' => __( 'All capabilities assigned to the resource.', 'mmt' ),
 					'type'        => 'object',
 					'context'     => array( 'view' ),
 					'readonly'    => true,
 				),
 				'extra_capabilities' => array(
-					'description' => __( 'Any extra capabilities assigned to the resource.', 'user' ),
+					'description' => __( 'Any extra capabilities assigned to the resource.', 'mmt' ),
 					'type'        => 'object',
+					'context'     => array( 'view' ),
+					'readonly'    => true,
+				),
+				'meta' => array(
+					'description' => __( 'Any user meta fields assigned to the resource', 'user' ),
+					'type'        => 'array',
 					'context'     => array( 'view' ),
 					'readonly'    => true,
 				),

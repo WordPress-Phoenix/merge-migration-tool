@@ -160,7 +160,7 @@ class MMT_Admin {
 		}
 
 		// Include Wizard.
-		include_once MMT_INC . 'class-mmt-wizard.php';
+		include_once MMT_INC . 'wizard/class-mmt-wizard.php';
 	}
 }
 
