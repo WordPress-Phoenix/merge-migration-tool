@@ -67,7 +67,9 @@ class MMT_API {
 	 */
 	public function __construct() {
 		add_action( 'rest_api_init', array( $this, 'controllers' ) );
-		add_filter( 'mmt_rest_api_permissions_check', array( $this, 'permissions' ), 10, 3 );
+		if ( ! is_user_logged_in() ) {
+			add_filter( 'mmt_rest_api_permissions_check', array( $this, 'permissions' ), 10, 3 );
+		}
 	}
 
 	/**
@@ -129,7 +131,7 @@ class MMT_API {
 	 * Get REST API Namespace
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return string
 	 */
@@ -155,7 +157,7 @@ class MMT_API {
 	 * Set REST API Remote Url
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 */
 	public static function set_remote_url( $url ) {
 		self::$remote_url = esc_url_raw( $url );
@@ -166,7 +168,7 @@ class MMT_API {
 	 * Get REST API Remote Url
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return bool|string
 	 */
@@ -178,7 +180,7 @@ class MMT_API {
 	 * Get REST API Remote Url Input Name
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return bool|string
 	 */
@@ -190,9 +192,9 @@ class MMT_API {
 	 * Set REST API Remote Key
 	 *
 	 * @static
-	 * @since  1.0.0
+	 * @since  0.1.0
 	 *
-	 * @return 1.0.0
+	 * @return 0.1.0
 	 */
 	public static function set_remote_key( $key ) {
 		self::$remote_key = esc_attr( $key );
@@ -203,7 +205,7 @@ class MMT_API {
 	 * Get REST API Remote Key
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return bool|string
 	 */
@@ -215,7 +217,7 @@ class MMT_API {
 	 * Get REST API Remote Key Input Name
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return string
 	 */
@@ -241,7 +243,7 @@ class MMT_API {
 	 * Verify - Remote Key => Migration Key
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @param string $key The hashed key to verify.
 	 *
@@ -256,7 +258,7 @@ class MMT_API {
 	/**
 	 * Get REST API Data
 	 *
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @param string $endpoint The api endpoint.
 	 * @param array  $args     Additional request args.
@@ -279,6 +281,9 @@ class MMT_API {
 		$remote_key = self::hash_key( $remote_key );
 
 		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
+
+		// Todo: Check for multsite support and handle.
+
 		$url = add_query_arg( 'api_key', $remote_key, $url );
 
 		$response      = wp_safe_remote_get( esc_url_raw( $url ), $args );
@@ -294,7 +299,7 @@ class MMT_API {
 	 * Verify REST API Access
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return array
 	 */
@@ -312,7 +317,7 @@ class MMT_API {
 	 * Get REST API Terms
 	 *
 	 * @static
-	 * @since 1.0.0
+	 * @since 0.1.0
 	 *
 	 * @return array
 	 */

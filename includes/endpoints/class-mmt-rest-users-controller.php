@@ -130,7 +130,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 			unset( $user_args['number'] );
 			unset( $user_args['offset'] );
 			$user_count_query = new WP_User_Query( $user_args );
-			$total_users = $user_count_query->get_total();
+			$total_users      = $user_count_query->get_total();
 		}
 		$response->header( 'X-WP-Total', (int) $total_users );
 		$max_pages = ceil( $total_users / $per_page );
@@ -246,6 +246,8 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 			}
 		}
 
+		// Todo: Clean user meta so as not to duplicate what is already in the user object.
+
 		// Context
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
 
@@ -255,7 +257,6 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 
 		// Wrap the data in a response object
 		$response = rest_ensure_response( $data );
-		$response->add_links( $this->prepare_links( $user ) );
 
 		/**
 		 * Filter user data returned from the REST API.
@@ -265,28 +266,6 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 		 * @param WP_REST_Request  $request  Request object.
 		 */
 		return apply_filters( 'mmt_rest_api_user_prepare', $response, $user, $request );
-	}
-
-	/**
-	 * Prepare links for the request.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param WP_Post $user User object.
-	 *
-	 * @return array Links for the given user.
-	 */
-	protected function prepare_links( $user ) {
-		$links = array(
-			'self'       => array(
-				'href' => rest_url( sprintf( '%s/%s/%d', $this->namespace, $this->rest_base, $user->ID ) ),
-			),
-			'collection' => array(
-				'href' => rest_url( sprintf( '%s/%s', $this->namespace, $this->rest_base ) ),
-			),
-		);
-
-		return apply_filters( 'mmt_rest_api_user_links', $links );
 	}
 
 	/**
@@ -416,7 +395,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 					'context'     => array( 'view' ),
 					'readonly'    => true,
 				),
-				'meta' => array(
+				'meta'               => array(
 					'description' => __( 'Any user meta fields assigned to the resource', 'user' ),
 					'type'        => 'array',
 					'context'     => array( 'view' ),

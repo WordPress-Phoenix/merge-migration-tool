@@ -219,7 +219,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 							printf(
 								'%s (%s)',
 								esc_attr( $migrated_user->user_login ),
-								esc_attr( $migrate_user->user_email )
+								esc_attr( $migrated_user->user_email )
 							);
 							?>
 						</div>
@@ -453,17 +453,20 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 			$users = $this->get_users_migratable_collection();
 		}
 
+		global $wpdb;
+
 		$migrated_users = array();
 
 		foreach ( $users as $user ) {
-			$user     = $user['user'];
-			$userdata = array(
+			$user           = $user['user'];
+			$user_added     = false;
+			$userdata       = array(
 				'user_login'      => $user['username'],
 				'user_url'        => $user['url'],
 				'user_email'      => $user['email'],
 				'first_name'      => $user['first_name'],
 				'last_name'       => $user['last_name'],
-				'user_pass'       => $user['password'],
+				'user_pass'       => null, // Insert password later.
 				'display_name'    => $user['name'],
 				'description'     => $user['description'],
 				'nickname'        => $user['nickname'],
@@ -471,11 +474,22 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 				'user_registered' => $user['registered_date'],
 			);
 
+
+			// Todo: Check multisite user
+
+			// Check, if we have added it above.
 			$user_id = wp_insert_user( $userdata );
 
+			// Check for error
 			if ( is_wp_error( $user_id ) ) {
+				MMT::debug( $user['id'] );
 				MMT::debug( $user_id->get_error_message() );
 				continue;
+			}
+
+			// Update Password
+			if ( ! empty( $user['password'] ) ) {
+				$wpdb->update( $wpdb->users, array( 'user_pass' => $user['password'] ), array( 'ID' => $user_id ), array( '%s' ), array( '%d' ) );
 			}
 
 			$migrated_users[] = new WP_User( $user_id );
@@ -508,6 +522,8 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 			$conflict     = $user['conflict'];
 			$current_user = $user['current_user'];
 			$user         = $user['user'];
+
+			// Todo: Check multisite user
 
 			if ( is_a( $current_user, 'WP_User' ) ) {
 				// Delete it if exists
