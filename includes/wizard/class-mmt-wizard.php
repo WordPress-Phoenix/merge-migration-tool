@@ -257,6 +257,7 @@ class MMT_Wizard {
 	public function start_migration() {
 		?>
 		<h1><?php esc_attr_e( 'Welcome!', 'mmt' ); ?></h1>
+		<p><?php esc_html_e( 'The following steps will walk you through migrating data from a remote site to this site. Please make sure you have all data prepared on the site you are pulling from as to not encounter any issues with the migration.', 'mmt' ); ?></p>
 		<p><?php esc_html_e( 'To start using the merge migration tool, press the Get Started button below.', 'mmt' ); ?></p>
 		<p class="mmt-actions step">
 			<a href="<?php echo esc_url( $this->get_next_step_link() ); ?>" class="button-primary button button-large button-next"><?php esc_attr_e( 'Get Started', 'mmt' ); ?></a>
@@ -282,7 +283,7 @@ class MMT_Wizard {
 			<p><?php esc_html_e( 'Please enter the needed details below to move forward.', 'mmt' ); ?></p>
 			<table class="form-table">
 				<tr>
-					<th><label for="<?php echo esc_attr( $remote_url_name ); ?>"><?php esc_attr_e( 'Migration Site URL', 'mmt' ); ?></label></th>
+					<th><label for="<?php echo esc_attr( $remote_url_name ); ?>"><?php esc_attr_e( 'Remote Site URL', 'mmt' ); ?></label></th>
 					<td><input type="text"
 							id="<?php echo esc_attr( $remote_url_name ); ?>"
 							name="<?php echo esc_attr( $remote_url_name ); ?>"
@@ -290,7 +291,7 @@ class MMT_Wizard {
 							value="<?php echo ( ! empty( $remote_url ) ) ? esc_url( $remote_url ) : ''; ?>"/></td>
 				</tr>
 				<tr>
-					<th><label for="<?php echo esc_attr( $remote_key_name ); ?>"><?php esc_attr_e( 'Migration Site Key', 'mmt' ); ?></label></th>
+					<th><label for="<?php echo esc_attr( $remote_key_name ); ?>"><?php esc_attr_e( 'Remote Site Key', 'mmt' ); ?></label></th>
 					<td><input type="password"
 							id="<?php echo esc_attr( $remote_key_name ); ?>"
 							name="<?php echo esc_attr( $remote_key_name ); ?>"
@@ -578,6 +579,20 @@ class MMT_Wizard {
 			}
 		}
 
+		return remove_query_arg( array( 'wizard-notice', 'sub-step' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) + $step_offset ] ) );
+	}
+
+	/**
+	 * Skip Next Link
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param int $step_offset The number of steps to go from the current step. Default is 1.
+	 *
+	 * @return string
+	 */
+	public function skip_next_link( $step_offset = 1 ) {
+		$keys = array_keys( $this->steps );
 		return remove_query_arg( array( 'wizard-notice', 'sub-step' ), add_query_arg( 'step', $keys[ array_search( $this->step, array_keys( $this->steps ), true ) + $step_offset ] ) );
 	}
 

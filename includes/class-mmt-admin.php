@@ -132,7 +132,7 @@ class MMT_Admin {
 	 * @return void
 	 */
 	public function key_section_callback() {
-		printf( '<p>%s</p>', esc_html__( 'Input a key below to allow verification of the migration wizard. You will be asked to enter requesting to migrate data from this site.', 'mmt' ) );
+		printf( '<p>%s</p>', esc_html__( 'Input a migration key below to allow verification of pulled data. You will be asked to enter this key to migrate data from this site.', 'mmt' ) );
 	}
 
 	/**

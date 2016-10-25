@@ -45,7 +45,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 					'handler' => array( $this, 'users_process_handler' ),
 				),
 				'users_complete' => array(
-					'name'    => __( 'Finish', 'mmt' ),
+					'name'    => __( 'Users Migration Complete', 'mmt' ),
 					'view'    => array( $this, 'users_complete' ),
 					'handler' => array( $this, 'users_complete_handler' ),
 				),
@@ -86,6 +86,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 			<p><?php esc_html_e( 'To continue, please click the button below.', 'mmt' ); ?></p>
 			<p class="mmt-actions step">
 				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->wizard->skip_next_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Skip', 'mmt' ); ?></a>
 				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>
 			</p>
