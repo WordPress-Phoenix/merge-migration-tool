@@ -67,7 +67,7 @@ class MMT_API {
 	 */
 	public function __construct() {
 		add_action( 'rest_api_init', array( $this, 'controllers' ) );
-		if ( ! is_user_logged_in() && current_user_can( 'manage_options' ) ) {
+		if ( ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) {
 			add_filter( 'mmt_rest_api_permissions_check', array( $this, 'permissions' ), 10, 3 );
 		}
 	}
