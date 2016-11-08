@@ -60,6 +60,25 @@ class MMT_API {
 	 */
 	protected static $remote_key_input_name = 'mmt_remote_api_key';
 
+	protected static $migration_type;
+	/**
+	 * Type of Migration to Execute
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @var string
+	 */
+	protected static $migration_types = array();
+
+	/**
+	 * Migration Type Key setting name
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @var string
+	 */
+	protected static $migration_type_input_name = 'mmt_migration_type';
+
 	/**
 	 * Constructor
 	 *
@@ -226,6 +245,66 @@ class MMT_API {
 	}
 
 	/**
+	 * Set the migration type for reference
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public static function set_migration_type( $key ) {
+		self::$migration_type = esc_attr( $key );
+		update_option( self::$migration_type_input_name, self::$migration_type );
+	}
+
+	/**
+	 * Retrieve Migration Type
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public static function get_migration_type() {
+		return get_option( self::$migration_type_input_name );
+	}
+
+	/**
+	 * Retrieve Migration Type input name for select form building
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public static function get_migration_type_input_name() {
+		return self::$migration_type_input_name;
+	}
+
+	/**
+	 * Build out migration type options
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public static function get_migration_types() {
+		$types = apply_filters('mmt_migration_types', array(
+			'multisite-site-within-site'          => 'Site to site within multisite',
+			'multisite-site-to-category'          => 'Site to cateogry within multisite',
+			'multisite-site-from-other-multisite' => 'Site from one Multisite to another',
+		));
+
+		$options = '';
+		foreach ( $types as $key => $type ) {
+			$selected = selected(self::get_migration_type(), $key);
+			$options .= sprintf( '<option value="%s" %s>%s</option>', $key, $selected, $type );
+		}
+		return $options;
+	}
+
+	/**
 	 * Hash Key
 	 *
 	 * @static
@@ -286,7 +365,7 @@ class MMT_API {
 
 		$url = add_query_arg( 'api_key', $remote_key, $url );
 
-		$response      = wp_safe_remote_get( esc_url_raw( $url ), $args );
+		$response      = wp_remote_get( esc_url_raw( $url ), $args );
 		$response_code = wp_remote_retrieve_response_code( $response );
 		if ( is_wp_error( $response ) || 200 !== $response_code ) {
 			return false;

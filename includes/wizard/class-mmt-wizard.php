@@ -273,15 +273,25 @@ class MMT_Wizard {
 	 */
 	public function setup_migration() {
 		// Vars.
-		$remote_url      = MMT_API::get_remote_url();
-		$remote_url_name = MMT_API::get_remote_url_input_name();
-		$remote_key      = MMT_API::get_remote_key();
-		$remote_key_name = MMT_API::get_remote_key_input_name();
+		$migration_types     = MMT_API::get_migration_types();
+		$migration_type_name = MMT_API::get_migration_type_input_name();
+		$remote_url          = MMT_API::get_remote_url();
+		$remote_url_name     = MMT_API::get_remote_url_input_name();
+		$remote_key          = MMT_API::get_remote_key();
+		$remote_key_name     = MMT_API::get_remote_key_input_name();
 		?>
 		<h1><?php esc_attr_e( 'Setup Migration', 'mmt' ); ?></h1>
 		<form method="post">
 			<p><?php esc_html_e( 'Please enter the needed details below to move forward.', 'mmt' ); ?></p>
 			<table class="form-table">
+				<tr>
+					<th><label for="<?php echo esc_attr( $migration_type_name ); ?>"><?php esc_attr_e( 'Migration Type', 'mmt' ); ?></label></th>
+					<td>
+						<select name="<?php echo esc_attr( $migration_type_name ); ?>" id="<?php echo esc_attr( $migration_type_name ); ?>">
+							<?php echo $migration_types ?>
+						</select>
+					</td>
+				</tr>
 				<tr>
 					<th><label for="<?php echo esc_attr( $remote_url_name ); ?>"><?php esc_attr_e( 'Remote Site URL', 'mmt' ); ?></label></th>
 					<td><input type="text"
@@ -317,10 +327,12 @@ class MMT_Wizard {
 		check_admin_referer( 'mmt-wizard', 'security' );
 
 		// Post Var Names.
-		$remote_url_name = MMT_API::get_remote_url_input_name();
-		$remote_key_name = MMT_API::get_remote_key_input_name();
+		$migration_type_name = MMT_API::get_migration_type_input_name();
+		$remote_url_name     = MMT_API::get_remote_url_input_name();
+		$remote_key_name     = MMT_API::get_remote_key_input_name();
 
 		// Post Vars.
+		$migration_type = ( ! empty( $_POST[ $migration_type_name ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ $migration_type_name ] ) ) : ''; // Input var ok.
 		$remote_url = ( ! empty( $_POST[ $remote_url_name ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ $remote_url_name ] ) ) : ''; // Input var ok.
 		$remote_key = ( ! empty( $_POST[ $remote_key_name ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ $remote_key_name ] ) ) : ''; // Input var ok.
 
@@ -331,6 +343,7 @@ class MMT_Wizard {
 		}
 
 		// Add Settings.
+		MMT_API::set_migration_type( $migration_type );
 		MMT_API::set_remote_url( $remote_url );
 		MMT_API::set_remote_key( $remote_key );
 
