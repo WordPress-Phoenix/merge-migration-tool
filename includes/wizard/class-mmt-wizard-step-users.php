@@ -189,9 +189,14 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 	 */
 	public function users_process_handler() {
 		$this->wizard->verify_security_field();
+		$migration_type = MMT_API::get_migration_type();
 
-		$this->migrate_users();
-		$this->migrate_referenced_users();
+		if ( is_multisite() && 'multisite-site-within-site' == $migration_type ) {
+			$this->migrate_inner_multisite_users();
+		} else {
+			$this->migrate_users();
+			$this->migrate_referenced_users();
+		}
 
 		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
 		exit;
@@ -345,7 +350,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 			);
 		}
 
-		// Check for confligcts
+		// Check for conflicts
 		foreach ( $remote_users as $remote_user ) {
 
 			// Search to see if they match
@@ -475,7 +480,6 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 				'user_registered' => $user['registered_date'],
 			);
 
-
 			// Todo: Check multisite user
 
 			// Check, if we have added it above.
@@ -498,6 +502,59 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 
 		if ( ! empty( $migrated_users ) ) {
 			set_transient( 'mmt_users_migrated', $migrated_users, DAY_IN_SECONDS );
+		}
+
+		return $migrated_users;
+	}
+
+	/**
+	 * Assign users to new site for inner multisite site to site transfers
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array $users
+	 *
+	 * @return array
+	 */
+	public function migrate_inner_multisite_users( $users = array() ) {
+
+		if ( empty( $users ) ) {
+			$users = $this->get_users_migratable_collection();
+		}
+
+		$current_blog_id = get_current_blog_id();
+		$migrated_users = array();
+
+		// get the migrated blog id to obtain current capability for migration
+		$remote_url = parse_url( MMT_API::get_remote_url() );
+		$migrate_blog_id = get_blog_id_from_url( $remote_url['host'] );
+
+		foreach ( $users as $user ) {
+
+			$user = array_shift( $user );
+			$user_id = $user['id'];
+
+			// get migrated site role
+			$merge_role = $this->get_user_role( $user, $migrate_blog_id );
+			$current_role = $this->get_user_role( $user, $current_blog_id );
+
+			$role = $current_role;
+
+			if ( ! $current_role ) {
+				$role = $merge_role;
+			}
+
+			// clear out the primary blog
+			update_user_meta( $user_id, 'primary_blog', '' );
+
+			// set the role for the user, new primary blog will be set within this method
+			add_user_to_blog( $current_blog_id, $user_id, $role );
+
+			$migrated_users[] = new WP_User( $user_id );
+		}
+
+		if ( ! empty( $migrated_users ) ) {
+			set_transient( 'mmt_users_updated', $migrated_users, DAY_IN_SECONDS );
 		}
 
 		return $migrated_users;
@@ -548,6 +605,26 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 		}
 
 		return $migrated_users;
+	}
+
+	/**
+	 * Get user role from a specific site
+	 *
+	 * @param $user    User to check
+	 * @param $blog_id Site to reference
+	 *
+	 * @return bool|string
+	 */
+	public function get_user_role( $user, $blog_id ) {
+		$user_cap           = $user['meta'][ 'wp_' . $blog_id . '_capabilities' ];
+		$migrated_site_role = maybe_unserialize( $user_cap );
+		$migrated_site_role = key( $migrated_site_role );
+
+		if ( ! empty( $migrated_site_role ) ) {
+		    return $migrated_site_role;
+		}
+
+		return false;
 	}
 
 	/**

@@ -60,12 +60,20 @@ class MMT_API {
 	 */
 	protected static $remote_key_input_name = 'mmt_remote_api_key';
 
-	protected static $migration_type;
 	/**
 	 * Type of Migration to Execute
 	 *
 	 * @static
-	 * @since 0.1.0
+	 * @since 0.1.1
+	 * @var string
+	 */
+	protected static $migration_type;
+
+	/**
+	 * Methods of migration
+	 *
+	 * @static
+	 * @since 0.1.1
 	 * @var string
 	 */
 	protected static $migration_types = array();
