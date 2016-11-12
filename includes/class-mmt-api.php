@@ -298,17 +298,18 @@ class MMT_API {
 	 * @return string
 	 */
 	public static function get_migration_types() {
-		$types = apply_filters('mmt_migration_types', array(
+		$types = apply_filters( 'mmt_migration_types', array(
 			'multisite-site-within-site'          => 'Site to site within multisite',
-			'multisite-site-to-category'          => 'Site to cateogry within multisite',
+			'multisite-site-to-category'          => 'Site to category within multisite',
 			'multisite-site-from-other-multisite' => 'Site from one Multisite to another',
-		));
+		) );
 
 		$options = '';
 		foreach ( $types as $key => $type ) {
-			$selected = selected(self::get_migration_type(), $key);
+			$selected = selected( self::get_migration_type(), $key, false );
 			$options .= sprintf( '<option value="%s" %s>%s</option>', $key, $selected, $type );
 		}
+
 		return $options;
 	}
 
@@ -411,6 +412,16 @@ class MMT_API {
 	public static function get_terms() {
 		return self::get_data( 'terms' );
 	}
+
+	public static function map( $items, $callback ) {
+		$results = [];
+		foreach ( $items as $item ) {
+			$results[] = $callback( $item );
+		}
+
+		return $results;
+	}
+
 }
 
 new MMT_API();

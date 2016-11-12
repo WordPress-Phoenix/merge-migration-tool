@@ -26,6 +26,13 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 	public $name = 'terms';
 
 	/**
+	 * Container for migrated terms on final term screen
+	 *
+	 * @var array
+	 */
+	public $migrated_terms = [];
+
+	/**
 	 * Register Step
 	 *
 	 * @since 1.0.0
@@ -85,9 +92,12 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			<p><?php printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url ), esc_url( $url ) ); ?></p>
 			<p><?php esc_html_e( 'To continue, please click the button below.', 'mmt' ); ?></p>
 			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
-				<a href="<?php echo esc_url( $this->wizard->skip_next_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Skip', 'mmt' ); ?></a>
-				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
+				<input type="submit" class="button-primary button button-large button-next"
+				       value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->wizard->skip_next_link() ); ?>"
+				   class="button button-large button-next"><?php esc_attr_e( 'Skip', 'mmt' ); ?></a>
+				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
+				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>
 			</p>
 		</form>
@@ -122,7 +132,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				<h3><?php esc_html_e( 'Terms that will be migrated:', 'mmt' ); ?></h3>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $migrateable_terms as $migrateable_term ) { ?>
-						<div class="mmt-item"><?php printf( '%s (%s)', esc_attr( $migrateable_term['term']['name'] ), esc_attr( $migrateable_term['term']['slug'] ) ); ?></div>
+						<div
+							class="mmt-item"><?php printf( '%s (%s)', esc_attr( $migrateable_term['name'] ), esc_attr( $migrateable_term['slug'] ) ); ?></div>
 					<?php } ?>
 				</div>
 			<?php } ?>
@@ -173,8 +184,10 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				</div>
 			<?php } ?>
 			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
-				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
+				<input type="submit" class="button-primary button button-large button-next"
+				       value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
+				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>
 			</p>
 		</form>
@@ -218,8 +231,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 							<?php
 							printf(
 								'%s (%s)',
-								esc_attr( $migrated_term->name ),
-								esc_attr( $migrated_term->slug )
+								esc_attr( $migrated_term['name'] ),
+								esc_attr( $migrated_term['slug'] )
 							);
 							?>
 						</div>
@@ -274,8 +287,10 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				</div>
 			<?php } ?>
 			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next" value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
-				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>" class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
+				<input type="submit" class="button-primary button button-large button-next"
+				       value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
+				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>
 			</p>
 		</form>
@@ -335,12 +350,12 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$migrateable_terms  = array();
 
 		// Get Current Terms
-		$current_terms_query = get_terms( array( 'post_tag', 'category' ), array( 'hide_empty' => true, 'number' => - 1 ) );
+		$current_terms_query = get_terms( array( 'post_tag', 'category' ), array( 'hide_empty' => false ) );
 		foreach ( $current_terms_query as $term ) {
 			$current_site_terms[] = array( 'term' => $term, 'slug' => $term->slug );
 		}
 
-		// Check for confligcts
+		// Check for conflicts
 		foreach ( $remote_terms as $remote_term ) {
 
 			// Search to see if they match
@@ -357,13 +372,40 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			}
 
 			// No slug conflicts.
-			$migrateable_terms[] = array( 'term' => $remote_term );
+			$migrateable_terms[ $remote_term['id'] ] = $remote_term;
 		}
+
+		// Swap parent ids with slugs for relationships
+		$migrateable_terms = $this->process_term_relationship( $migrateable_terms );
+
+		//refactor array to other side
+		$migrateable_terms = MMT_API::map( $migrateable_terms, function ( $term ) {
+			array_shift( $term );
+
+			return $term;
+		} );
 
 		// Set Transients for later
 		set_transient( 'mmt_terms_conflicted', $conflicted_terms, DAY_IN_SECONDS );
 		set_transient( 'mmt_terms_referenced', $referenced_terms, DAY_IN_SECONDS );
 		set_transient( 'mmt_terms_migrateable', $migrateable_terms, DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Map the parent slug to the term before migrating
+	 *
+	 * @param $terms
+	 *
+	 * @return mixed
+	 */
+	public function process_term_relationship( $terms ) {
+		foreach ( $terms as $term ) {
+			if ( $term['parent'] ) {
+				$terms[ $term['id'] ]['migrate_parent'] = $terms[ $term['parent'] ]['slug'];
+			}
+		}
+
+		return $terms;
 	}
 
 	/**
@@ -428,19 +470,33 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			$terms = $this->get_terms_migratable_collection();
 		}
 
-		global $wpdb;
+		// Get the last key for comparison
+		end( $terms );
+		$last = key( $terms );
 
-		$migrated_terms = array();
+		// Make sure to start back at the beginning
+		reset( $terms );
 
-		foreach ( $terms as $term ) {
-			$term          = $term['term'];
+		foreach ( $terms as $key => $term ) {
 			$term_name     = $term['name'];
 			$term_taxonomy = $term['taxonomy'];
 			$terms_args    = array(
 				'description' => $term['description'],
 				'slug'        => $term['slug'],
-				'parent'      => '',
 			);
+
+			$terms_args['parent'] = '';
+
+			if ( array_key_exists( 'migrate_parent', $term ) ) {
+				$parent_term = get_term_by( 'slug', $term['migrate_parent'], $term['taxonomy'] );
+
+				//  The term parent might not have been imported yet. Come back to it the next time around
+				if ( false === $parent_term ) {
+					continue;
+				}
+
+				$terms_args['parent'] = $parent_term->term_id;
+			}
 
 			$term_array = wp_insert_term( $term_name, $term_taxonomy, $terms_args );
 
@@ -451,14 +507,31 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				continue;
 			}
 
-			$migrated_terms[] = new WP_Term( $term_array['term_id'] );
+			// This method is called recursively, so the migrated data is stored in a property
+			$this->migrated_terms[] = [
+				'term_id' => $term_array['term_id'],
+				'name'    => $term['name'],
+				'slug'    => $term['slug'],
+			];
+
+			// Remove term from reference array after successful import
+			if ( is_array( $term_array ) ) {
+				unset( $terms[ $key ] );
+			}
+
+			// Recursion! This makes hierarchical relationship building work on import
+			if ( $key == $last && count( $terms ) > 0 ) {
+				reset( $terms );
+				$this->migrate_terms( $terms );
+			}
+
 		}
 
-		if ( ! empty( $migrated_terms ) ) {
-			set_transient( 'mmt_terms_migrated', $migrated_terms, DAY_IN_SECONDS );
+		if ( ! empty( $this->migrated_terms ) ) {
+			set_transient( 'mmt_terms_migrated', $this->migrated_terms, DAY_IN_SECONDS );
 		}
 
-		return $migrated_terms;
+		return $this->migrated_terms;
 	}
 
 	/**

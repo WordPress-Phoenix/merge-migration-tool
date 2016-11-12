@@ -66,8 +66,12 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 			'include'    => $request['include'],
 			'order'      => $request['order'],
 			'orderby'    => $request['orderby'],
-			'number'     => $request['per_page'],
+			////'number'     => $request['per_page'],
 			'hide_empty' => ( isset( $request['hide_empty'] ) ) ? $request['hide_empty'] : false,
+
+			// todo: move this to a filters class
+			// remove number from query
+			// add option to hide_empty if needed
 		);
 
 		if ( ! empty( $request['offset'] ) ) {
