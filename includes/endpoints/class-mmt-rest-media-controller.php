@@ -61,9 +61,17 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$media_items = array();
-		$media       = array();
-		foreach ( $media_items as $media_item ) {
+		$media = array();
+
+		$media_items = new WP_Query(
+			array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'posts_per_page' => - 1,
+			)
+		);
+
+		foreach ( $media_items->posts as $media_item ) {
 			$itemdata = $this->prepare_item_for_response( $media_item, $request );
 			$media[]  = $this->prepare_response_for_collection( $itemdata );
 		}
@@ -84,9 +92,52 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 *
 	 * @return mixed
 	 */
-	public function prepare_item_for_response( $media_item, $request ) {
+	public function prepare_item_for_response( $media, $request ) {
 		$data   = array();
 		$schema = $this->get_item_schema();
+
+		// grab any post meta
+		$meta = get_post_meta( $media->ID );
+
+		// swap the parent slug for migrating
+		// The post parent slug cannot be saved as a string, so it is
+		// mapped to postmeta and will be deleted upon migration cleanup
+		if ( 0 !== $media->post_parent ) {
+			$parent_slug = get_post( $media->post_parent );
+			$parent_slug = $parent_slug->post_name;
+			$meta['_migrated_data']['parent'] = $parent_slug;
+		}
+
+		$meta['_migrated_data']['migrated'] = true;
+		$meta['_migrated_data'] = maybe_serialize( $meta['_migrated_data'] );
+
+		//swap the user id with email for migrating
+		$author = get_the_author_meta( 'email', $media->post_author );
+
+		$data = array(
+			'post_author'           => $author,
+			'post_date'             => $media->post_date,
+			'post_date_gmt'         => $media->post_date_gmt,
+			'post_content'          => $media->post_content,
+			'post_title'            => $media->post_title,
+			'post_excerpt'          => $media->post_excerpt,
+			'post_status'           => $media->post_status,
+			'comment_status'        => $media->comment_status,
+			'ping_status'           => $media->ping_status,
+			'post_password'         => $media->post_password,
+			'post_name'             => $media->post_name,
+			'to_ping'               => $media->to_ping,
+			'ping'                  => $media->ping,
+			'post_modified'         => $media->post_modified,
+			'post_modified_gmt'     => $media->post_modified_gmt,
+			'post_content_filtered' => $media->post_content_filtered,
+			'guid'                  => $media->guid,
+			'menu_order'            => $media->menu_order,
+			'post_type'             => $media->post_type,
+			'post_mime_type'        => $media->post_mime_type,
+			'comment_count'         => $media->comment_count,
+			'post_meta'             => $meta
+		);
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
 

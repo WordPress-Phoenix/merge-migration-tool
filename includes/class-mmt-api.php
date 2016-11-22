@@ -88,6 +88,24 @@ class MMT_API {
 	protected static $migration_type_input_name = 'mmt_migration_type';
 
 	/**
+	 * Type of Migration to Execute
+	 *
+	 * @static
+	 * @since 0.1.1
+	 * @var string
+	 */
+	protected static $migration_author_id;
+
+	/**
+	 * Migration Type Key setting name
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @var string
+	 */
+	protected static $migration_author_input_name = 'mmt_fallback_author_id';
+
+	/**
 	 * Constructor
 	 *
 	 * @since 0.1.0
@@ -311,6 +329,61 @@ class MMT_API {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Build out options for fallback author
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public static function get_migration_authors() {
+		$users = get_users();
+		$options = '';
+
+		foreach ( $users as $user ) {
+			$selected = selected( self::get_migration_author(), $user->data->ID, false );
+			$options .= sprintf( '<option value="%s" %s>%s</option>', $user->data->ID, $selected,$user->data->user_nicename );
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Retrieve Migration Type input name for select form building
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	public static function get_migration_author_input_name() {
+		return self::$migration_author_input_name;
+	}
+
+	/**
+	 * Retrieve Fallback Author ID
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return integer
+	 */
+	public static function get_migration_author() {
+		return get_option( self::$migration_author_input_name );
+	}
+
+	/**
+	 * Set the migration type for reference
+	 *
+	 * @static
+	 * @since 0.1.0
+	 */
+	public static function set_migration_author( $key ) {
+		self::$migration_author_id = esc_attr( $key );
+		update_option( self::$migration_author_input_name, self::$migration_author_id );
 	}
 
 	/**
