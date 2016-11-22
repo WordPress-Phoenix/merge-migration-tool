@@ -47,12 +47,12 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 					'handler' => array( $this, 'terms_migration_start_handler' ),
 				),
 				'terms_process'  => array(
-					'name'    => __( 'Get Users', 'mmt' ),
+					'name'    => __( 'Get Terms', 'mmt' ),
 					'view'    => array( $this, 'terms_process' ),
 					'handler' => array( $this, 'terms_process_handler' ),
 				),
 				'terms_complete' => array(
-					'name'    => __( 'Users Migration Complete', 'mmt' ),
+					'name'    => __( 'Terms Migration Complete', 'mmt' ),
 					'view'    => array( $this, 'terms_complete' ),
 					'handler' => array( $this, 'terms_complete_handler' ),
 				),
@@ -88,7 +88,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		?>
 		<h1><?php esc_attr_e( 'Terms Migration', 'mmt' ); ?></h1>
 		<form method="post">
-			<p><?php esc_html_e( 'During the next few steps, we will migrate all terms from the following site:', 'mmt' ); ?></p>
+			<p><?php esc_html_e( 'During the next few steps, this tool will migrate all terms from the following site:', 'mmt' ); ?></p>
 			<p><?php printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url ), esc_url( $url ) ); ?></p>
 			<p><?php esc_html_e( 'To continue, please click the button below.', 'mmt' ); ?></p>
 			<p class="mmt-actions step">
