@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) or die();
  *
  * todo: maybe add imported media post ids to transient for processing
  * todo: implement conflict management
+ * todo: fix title migration bug
  *
  * @since 0.1.0
  */
@@ -61,7 +62,6 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 					'handler' => array( $this, 'media_complete_handler' ),
 				),
 			) ),
-
 		) );
 	}
 
@@ -106,6 +106,23 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 	}
 
 	/**
+	 * Media Migration Setup
+	 *
+	 * @since 0.1.0
+	 */
+	public function media_migration_handler() {
+		$this->wizard->verify_security_field();
+
+		$migration_author_input_name = MMT_API::get_migration_author_input_name();
+		$migration_fallback_author   = ( ! empty( $_POST[ $migration_author_input_name ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ $migration_author_input_name ] ) ) : ''; // Input var ok.
+
+		MMT_API::set_migration_author( $migration_fallback_author );
+
+		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
+		exit;
+	}
+
+	/**
 	 * Media - Process
 	 *
 	 * List posts to migrate
@@ -135,34 +152,6 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 	}
 
 	/**
-	 * Make the api call to grab posts
-	 *
-	 * @return array|bool
-	 */
-	public function get_media_posts() {
-		$media = MMT_API::get_data( 'media' );
-
-		return $media;
-	}
-
-	/**
-	 * Media Migration Setup
-	 *
-	 * @since 0.1.0
-	 */
-	public function media_migration_handler() {
-		$this->wizard->verify_security_field();
-
-		$migration_author_input_name = MMT_API::get_migration_author_input_name();
-		$migration_fallback_author   = ( ! empty( $_POST[ $migration_author_input_name ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ $migration_author_input_name ] ) ) : ''; // Input var ok.
-
-		MMT_API::set_migration_author( $migration_fallback_author );
-
-		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
-		exit;
-	}
-
-	/**
 	 * Media Post Migration Handler
 	 *
 	 * @since 0.1.0
@@ -172,6 +161,67 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 		$this->migrate_media();
 		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
 		exit;
+	}
+
+	/**
+	 * Media - Complete
+	 *
+	 * @since 0.1.0
+	 */
+	public function media_complete() {
+		$migrated_media_ids = $this->get_migrated_media_posts();
+		?>
+		<h1><?php esc_attr_e( 'Media Migration Complete!', 'mmt' ); ?></h1>
+		<form method="post">
+			<?php if ( $migrated_media_ids ) {
+
+				$media = new WP_Query( [
+					'post_type'   => 'attachment',
+					'post_status' => 'inherit',
+					'posts__in'   => array_values( $migrated_media_ids )
+				] );
+				?>
+
+				<h3><?php esc_html_e( 'Migrated Media', 'mmt' ); ?></h3>
+				<p><?php echo $media->post_count ?><?php esc_html_e( 'media posts were migrated to the current site.', 'mmt' ); ?></p>
+				<div class="mmt-items-list-overflow">
+					<?php foreach ( $media->posts as $post ) { ?>
+						<div class="mmt-item">
+							<?php printf( '(ID: %s) %s', esc_attr( $post->ID ), esc_attr( $post->post_name ) ); ?>
+						</div>
+					<?php } ?>
+				</div>
+			<?php } ?>
+			<p class="mmt-actions step">
+				<input type="submit" class="button-primary button button-large button-next"
+				       value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
+				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
+				<?php $this->wizard->security_field(); ?>
+			</p>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Terms - Complete Handler
+	 *
+	 * @since 0.1.0
+	 */
+	public function media_complete_handler() {
+		$this->wizard->verify_security_field();
+		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
+		exit;
+	}
+
+	/**
+	 * Make the api call to grab posts
+	 *
+	 * @return array|bool
+	 */
+	public function get_media_posts() {
+		$media = MMT_API::get_data( 'media' );
+		return $media;
 	}
 
 	/**
@@ -223,6 +273,8 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 
 	/**
 	 * Set post metadata for imported attachments
+     *
+     * todo: add this to the api class or own class
 	 *
 	 * @param $fields
 	 */
@@ -236,46 +288,6 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 	}
 
 	/**
-	 * Media - Complete
-	 *
-	 * @since 0.1.0
-	 */
-	public function media_complete() {
-		$migrated_media_ids = $this->get_migrated_media_posts();
-		?>
-		<h1><?php esc_attr_e( 'Media Migration Complete!', 'mmt' ); ?></h1>
-		<form method="post">
-			<?php if ( $migrated_media_ids ) {
-
-				$media = new WP_Query( [
-					'post_type'   => 'attachment',
-					'post_status' => 'inherit',
-					'posts__in'   => array_values( $migrated_media_ids )
-				] );
-				?>
-
-				<h3><?php esc_html_e( 'Migrated Media', 'mmt' ); ?></h3>
-				<p><?php echo $media->post_count ?><?php esc_html_e( 'media posts were migrated to the current site.', 'mmt' ); ?></p>
-				<div class="mmt-items-list-overflow">
-					<?php foreach ( $media->posts as $post ) { ?>
-						<div class="mmt-item">
-							<?php printf( '(ID: %s) %s', esc_attr( $post->ID ), esc_attr( $post->post_name ) ); ?>
-						</div>
-					<?php } ?>
-				</div>
-			<?php } ?>
-			<p class="mmt-actions step">
-				<input type="submit" class="button-primary button button-large button-next"
-				       value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
-				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
-				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
-				<?php $this->wizard->security_field(); ?>
-			</p>
-		</form>
-		<?php
-	}
-
-	/**
 	 * Get Migrated Terms
 	 *
 	 * @since 0.1.0
@@ -284,16 +296,5 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 	 */
 	public function get_migrated_media_posts() {
 		return ( false !== ( $media = get_transient( 'mmt_media_ids_migrated' ) ) ) ? $media : array();
-	}
-
-	/**
-	 * Terms - Complete Handler
-	 *
-	 * @since 0.1.0
-	 */
-	public function media_complete_handler() {
-		$this->wizard->verify_security_field();
-		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
-		exit;
 	}
 }

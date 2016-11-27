@@ -67,7 +67,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			array(
 				'post_type'      => 'attachment',
 				'post_status'    => 'inherit',
-				'posts_per_page' => - 1,
+				'posts_per_page' => -1,
 			)
 		);
 
