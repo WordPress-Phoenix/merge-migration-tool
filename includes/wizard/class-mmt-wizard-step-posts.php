@@ -190,6 +190,10 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 		// todo: maybe process this differently?
 		$migrate_posts = $this->get_blog_posts();
 
+		// setup url video swapping
+		$current_site_url = get_site_url();
+		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+
 		foreach ( $migrate_posts as $postdata ) {
 			// look up and swap the author email with author id
 			$author_email            = $postdata['post_author'];
@@ -201,10 +205,11 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 				$postdata['post_author'] = MMT_API::get_migration_author();
 			}
 
-			// handle url swapping
-			$current_site_url = get_site_url();
-			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+            // swap url in guid
 			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+
+			// swap url in content
+			$postdata['post_content'] = str_replace( $migrate_site_url, $current_site_url, $postdata['post_content'] );
 
 			// make it a post
 			$id = wp_insert_post( $postdata );
