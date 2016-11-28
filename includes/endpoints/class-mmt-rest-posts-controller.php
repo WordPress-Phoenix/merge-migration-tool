@@ -61,9 +61,11 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$posts_query = new WP_Query( array( 'post_type' => 'post', 'posts_per_page' => 10 ) );
+
+		// todo: add call per page request
+		$posts_query = new WP_Query( array( 'post_type' => 'post', 'posts_per_page' => 10, 'post_status' => 'publish' ) );
 		$posts       = array();
-		foreach ( $posts_query->get_posts() as $post ) {
+		foreach ( $posts_query->posts as $post ) {
 			$itemdata = $this->prepare_item_for_response( $post, $request );
 			$posts[]  = $this->prepare_response_for_collection( $itemdata );
 		}
@@ -87,6 +89,46 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	public function prepare_item_for_response( $post, $request ) {
 		$data   = array();
 		$schema = $this->get_item_schema();
+
+		$author = get_the_author_meta( 'email', $post->post_author );
+
+		// grab any post meta
+		$meta = get_post_meta( $post->ID );
+
+		if ( isset( $meta['_thumbnail_id'] ) ) {
+			$image_id = $meta['_thumbnail_id'][0];
+			$featured_image = get_post( $image_id );
+			$meta['_thumbnail_id'][0] = $featured_image->post_name;
+		}
+
+		$meta['_migrated_data']['migrated'] = true;
+		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
+
+		$data = array(
+			'post_author'           => $author,
+			'post_date'             => $post->post_date,
+			'post_date_gmt'         => $post->post_date_gmt,
+			'post_content'          => $post->post_content,
+			'post_title'            => $post->post_title,
+			'post_excerpt'          => $post->post_excerpt,
+			'post_status'           => $post->post_status,
+			'comment_status'        => $post->comment_status,
+			'ping_status'           => $post->ping_status,
+			'post_password'         => $post->post_password,
+			'post_name'             => $post->post_name,
+			'to_ping'               => $post->to_ping,
+			'pinged'                => $post->ping,
+			'post_modified'         => $post->post_modified,
+			'post_modified_gmt'     => $post->post_modified_gmt,
+			'post_content_filtered' => $post->post_content_filtered,
+			'post_parent'           => $post->post_parent,
+			'guid'                  => $post->guid,
+			'menu_order'            => $post->menu_order,
+			'post_type'             => $post->post_type,
+			'post_mime_type'        => $post->post_mime_type,
+			'comment_count'         => $post->comment_count,
+			'post_meta'             => $meta
+		);
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
 
