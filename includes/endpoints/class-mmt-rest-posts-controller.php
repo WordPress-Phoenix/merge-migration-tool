@@ -127,7 +127,8 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			'post_type'             => $post->post_type,
 			'post_mime_type'        => $post->post_mime_type,
 			'comment_count'         => $post->comment_count,
-			'post_meta'             => $meta
+			'post_meta'             => $meta,
+			'post_terms'            => $this->get_post_term_data( $post->ID )
 		);
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
@@ -157,7 +158,38 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 */
 	public function get_collection_params() {
 		$query_params = parent::get_collection_params();
-
 		return $query_params;
+	}
+
+	/**
+	 * Get post term data
+	 *
+	 * This function is used transfer taxonomy relationships and usage counts
+	 *
+	 * @param $post_id Post to retrieve terms from
+	 *
+	 * @return array
+	 */
+	public function get_post_term_data( $post_id ) {
+		//todo: test with custom taxonomies
+		// get register taxonomies
+		$taxonomies = get_taxonomies( array( 'public' => 'true'), 'names' );
+
+		// post_format not needed
+		unset( $taxonomies['post_format'] );
+
+		// ensure no dupes and set data to values for taxonomy lookup
+		array_unique( $taxonomies );
+		$taxonomies = array_values( $taxonomies );
+
+		// get post terms
+		$terms = wp_get_post_terms( $post_id, $taxonomies, array( "fields" => "all" ) );
+
+		// send over only the information we need
+		$terms_grouped = [];
+		foreach ( $terms as $term ) {
+			$terms_grouped[ $term->taxonomy ][] = $term->slug;
+		}
+		return $terms_grouped;
 	}
 }

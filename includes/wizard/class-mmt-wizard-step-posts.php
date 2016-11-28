@@ -217,6 +217,12 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 			// if no errors add the post meta
 			if ( ! is_wp_error( $id ) ) {
 
+			    // set the taxonomy terms
+                foreach ( $postdata['post_terms'] as $term => $val ) {
+	                wp_set_object_terms( $id, $val, $term );
+                }
+
+                // set the featured image if there is one
 			    if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
 			        $migrate_title = $postdata['post_meta']['_thumbnail_id'];
 				    $attachment_post = get_page_by_title( $migrate_title, OBJECT, 'attachment' );

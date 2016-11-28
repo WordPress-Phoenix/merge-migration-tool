@@ -486,6 +486,14 @@ class MMT_API {
 		return self::get_data( 'terms' );
 	}
 
+	/**
+	 * Helper function for mapping data
+	 *
+	 * @param $items
+	 * @param $callback
+	 *
+	 * @return array
+	 */
 	public static function map( $items, $callback ) {
 		$results = [];
 		foreach ( $items as $item ) {

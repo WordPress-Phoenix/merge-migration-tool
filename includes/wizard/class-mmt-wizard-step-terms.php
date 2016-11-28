@@ -483,9 +483,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			$terms_args    = array(
 				'description' => $term['description'],
 				'slug'        => $term['slug'],
+				'parent'      => 0,
 			);
-
-			$terms_args['parent'] = '';
 
 			if ( array_key_exists( 'migrate_parent', $term ) ) {
 				$parent_term = get_term_by( 'slug', $term['migrate_parent'], $term['taxonomy'] );
