@@ -225,7 +225,7 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 	}
 
 	/**
-	 * Injest Media Posts from Remote Site
+	 * Ingest Media Posts from Remote Site
 	 *
 	 * @since 0.1.1
 	 */
@@ -235,7 +235,7 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 
 		foreach ( $migrate_posts as $postdata ) {
 
-		    // todo: this might not be the best way to do this
+			// todo: check this for performance
 			$post_exist = get_page_by_title( $postdata['post_name'], OBJECT, 'attachment' );
 			if ( $post_exist->post_name === $postdata['post_name'] ) {
 			    continue;

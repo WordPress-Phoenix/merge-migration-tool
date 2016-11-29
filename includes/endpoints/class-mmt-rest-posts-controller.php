@@ -63,7 +63,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	public function get_items( $request ) {
 
 		// todo: add call per page request
-		$posts_query = new WP_Query( array( 'post_type' => 'post', 'posts_per_page' => 10, 'post_status' => 'publish' ) );
+		$posts_query = new WP_Query( array( 'post_type' => 'post', 'posts_per_page' => -1, 'post_status' => 'publish' ) );
 		$posts       = array();
 		foreach ( $posts_query->posts as $post ) {
 			$itemdata = $this->prepare_item_for_response( $post, $request );

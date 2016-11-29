@@ -181,8 +181,6 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 
 	/**
 	 * Ingest Posts from Remote Site
-     *
-     * todo: deal with duplicates
 	 *
 	 * @since 0.1.1
 	 */
@@ -195,6 +193,13 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
 
 		foreach ( $migrate_posts as $postdata ) {
+
+			// todo: check this for performance
+			$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
+			if ( $post_exist->post_name === $postdata['post_name'] ) {
+				continue;
+			}
+
 			// look up and swap the author email with author id
 			$author_email            = $postdata['post_author'];
 			$existing_author         = get_user_by( 'email', $author_email );
