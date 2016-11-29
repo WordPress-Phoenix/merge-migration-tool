@@ -182,7 +182,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 	/**
 	 * Ingest Posts from Remote Site
      *
-     * todo: fix featured image data migration
+     * todo: deal with duplicates
 	 *
 	 * @since 0.1.1
 	 */
@@ -224,7 +224,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 
                 // set the featured image if there is one
 			    if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
-			        $migrate_title = $postdata['post_meta']['_thumbnail_id'];
+			        $migrate_title = $postdata['post_meta']['_thumbnail_id'][0];
 				    $attachment_post = get_page_by_title( $migrate_title, OBJECT, 'attachment' );
 				    $postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
 			    }
