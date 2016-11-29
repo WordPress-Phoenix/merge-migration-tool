@@ -234,6 +234,13 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 		$migrate_posts = $this->get_media_posts();
 
 		foreach ( $migrate_posts as $postdata ) {
+
+		    // todo: this might not be the best way to do this
+			$post_exist = get_page_by_title( $postdata['post_name'], OBJECT, 'attachment' );
+			if ( $post_exist->post_name === $postdata['post_name'] ) {
+			    continue;
+			}
+
 			// look up and swap the author email with author id
 			$author_email            = $postdata['post_author'];
 			$existing_author         = get_user_by( 'email', $author_email );
@@ -283,6 +290,7 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 			if ( is_array( $data ) ) {
 				$data = array_shift( $data );
 			}
+			$data = maybe_unserialize( $data );
 			add_post_meta( $post_id, $key, $data );
 		}
 	}
