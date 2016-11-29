@@ -503,6 +503,22 @@ class MMT_API {
 		return $results;
 	}
 
+	/**
+	 * Set post metadata for imported attachments
+	 *
+	 * @param $fields
+	 * @param $post_id
+	 */
+	public static function set_postmeta( $fields, $post_id ) {
+		foreach ( $fields as $key => $data ) {
+			if ( is_array( $data ) ) {
+				$data = array_shift( $data );
+			}
+			$data = maybe_unserialize( $data );
+			add_post_meta( $post_id, $key, $data );
+		}
+	}
+
 }
 
 new MMT_API();

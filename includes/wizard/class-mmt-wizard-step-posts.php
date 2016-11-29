@@ -180,7 +180,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 	}
 
 	/**
-	 * Injest Posts from Remote Site
+	 * Ingest Posts from Remote Site
      *
      * todo: fix featured image data migration
 	 *
@@ -229,7 +229,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 				    $postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
 			    }
 
-				$this->add_media_postmeta( $postdata['post_meta'], $id );
+				MMT_API::set_postmeta( $postdata['post_meta'], $id );
 
 				// Track IDs for confirmation on the final media page
 				//$this->migrated_media_ids[] = $id;
@@ -243,22 +243,6 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 			//}
 
 			//todo: what do we do with posts that dont get inserted, recursion call?
-		}
-	}
-
-	/**
-	 * Set post metadata for imported attachments
-	 *
-	 * todo: add this to the api class or own class
-	 *
-	 * @param $fields
-	 */
-	public function add_media_postmeta( $fields, $post_id ) {
-		foreach ( $fields as $key => $data ) {
-			if ( is_array( $data ) ) {
-				$data = array_shift( $data );
-			}
-			add_post_meta( $post_id, $key, $data );
 		}
 	}
 }
