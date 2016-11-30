@@ -52,6 +52,24 @@ class MMT_API {
 	protected static $remote_key;
 
 	/**
+	 * Hide empty terms argument value
+	 *
+	 * @static
+	 * @since 0.1.1
+	 * @var boolean
+	 */
+	protected static $terms_hide_empty;
+
+	/**
+	 * Hide empty terms argument input name
+	 *
+	 * @static
+	 * @since 0.1.1
+	 * @var string
+	 */
+	protected static $terms_hide_empty_name = 'mmt_terms_include_empty';
+
+	/**
 	 * Remote API Key setting name
 	 *
 	 * @static
@@ -305,6 +323,32 @@ class MMT_API {
 	 */
 	public static function get_migration_type_input_name() {
 		return self::$migration_type_input_name;
+	}
+
+	/**
+	 * Get the terms Input name
+	 *
+	 * @return string
+	 */
+	public static function get_terms_empty_input_name() {
+		return self::$terms_hide_empty_name;
+	}
+
+	/**
+	 * Set terms hide_empty value
+	 *
+	 * @param $key
+	 */
+	public static function set_terms_empty_setting( $key ) {
+		self::$terms_hide_empty = esc_attr( $key );
+		update_option( self::$terms_hide_empty_name, self::$terms_hide_empty );
+	}
+
+	/**
+	 * Get terms hide_empty value
+	 */
+	public static function get_terms_empty_setting() {
+		return self::$terms_hide_empty;
 	}
 
 	/**

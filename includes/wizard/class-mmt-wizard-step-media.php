@@ -14,10 +14,6 @@ defined( 'ABSPATH' ) or die();
 /**
  * Class MMT_Wizard_Step_Terms
  *
- * todo: maybe add imported media post ids to transient for processing
- * todo: implement conflict management
- * todo: fix title migration bug
- *
  * @since 0.1.0
  */
 class MMT_Wizard_Step_Media extends MMT_Wizard_Step {

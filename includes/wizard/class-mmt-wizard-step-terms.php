@@ -84,12 +84,15 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$this->clear_data();
 
 		// Get the remote url from which we are pulling terms.
-		$url = MMT_API::get_remote_url();
+		$url             = MMT_API::get_remote_url();
+		$terms_include_empty_name = MMT_API::get_terms_empty_input_name();
+
 		?>
 		<h1><?php esc_attr_e( 'Terms Migration', 'mmt' ); ?></h1>
 		<form method="post">
 			<p><?php esc_html_e( 'During the next few steps, this tool will migrate all terms from the following site:', 'mmt' ); ?></p>
 			<p><?php printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url ), esc_url( $url ) ); ?></p>
+            <p><label><input type="checkbox" name="<?php echo esc_attr( $terms_include_empty_name );?>" value="1" <?php checked( get_option( $terms_include_empty_name ), '1' ); ?>> Include empty terms</label></p>
 			<p><?php esc_html_e( 'To continue, please click the button below.', 'mmt' ); ?></p>
 			<p class="mmt-actions step">
 				<input type="submit" class="button-primary button button-large button-next"
@@ -111,7 +114,14 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 	 */
 	public function terms_migration_start_handler() {
 		$this->wizard->verify_security_field();
+
+		$terms_include_empty_name = MMT_API::get_terms_empty_input_name();
+		$terms_include_empty = ( ! empty( $_POST[ $terms_include_empty_name ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ $terms_include_empty_name ] ) ) : '';
+
+		MMT_API::set_terms_empty_setting( $terms_include_empty );
+
 		$this->create_terms_collection();
+
 		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
 		exit;
 	}
@@ -317,7 +327,14 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 	 */
 	public function get_terms() {
 		if ( false === ( $terms = get_transient( 'mmt_terms' ) ) ) {
-			$terms = MMT_API::get_data( 'terms' );
+
+            $endpoint = 'terms?hide_empty=true';
+
+            if ( MMT_API::get_terms_empty_setting() ) {
+	            $endpoint = 'terms';
+            }
+
+			$terms = MMT_API::get_data( $endpoint );
 			set_transient( 'mmt_terms', $terms, DAY_IN_SECONDS );
 		}
 

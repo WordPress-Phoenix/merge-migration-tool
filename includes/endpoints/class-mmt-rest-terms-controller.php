@@ -66,11 +66,9 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 			'include'    => $request['include'],
 			'order'      => $request['order'],
 			'orderby'    => $request['orderby'],
-			////'number'     => $request['per_page'],
 			'hide_empty' => ( isset( $request['hide_empty'] ) ) ? $request['hide_empty'] : false,
 
-			// todo: move this to a filters class
-			// remove number from query
+			// todo: move this to a filters
 			// add option to hide_empty if needed
 		);
 
@@ -229,7 +227,16 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 */
 	public function get_collection_params() {
 		$query_params = parent::get_collection_params();
-
-		return $query_params;
+		$user_query_params = array(
+			'hide_empty' => array(
+				'default'           => false,
+				'description'       => __( 'Hide terms without assignment', 'mmt' ),
+				'enum'              => array( true, false ),
+				'sanitize_callback' => 'sanitize_key',
+				'type'              => 'boolean',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+		);
+		return apply_filters( 'mmt_rest_api_term_params', array_merge( $user_query_params, $query_params ) );
 	}
 }
