@@ -82,8 +82,13 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	public function get_items( $request ) {
 
 		// todo: add call per page request
-		$posts_query = new WP_Query( array( 'post_type' => 'post', 'posts_per_page' => -1, 'post_status' => 'publish' ) );
-		$posts       = array();
+		$posts_query = new WP_Query(
+			array(
+				'paged'          => $request['page'],
+				'posts_per_page' => $request['per_page'],
+			)
+		);
+		$posts = array();
 		foreach ( $posts_query->posts as $post ) {
 			$itemdata = $this->prepare_item_for_response( $post, $request );
 			$posts[]  = $this->prepare_response_for_collection( $itemdata );
@@ -220,7 +225,16 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 */
 	public function get_collection_params() {
 		$query_params = parent::get_collection_params();
-		return $query_params;
+		$post_query_params = array(
+			'post_status' => array(
+				'default'           => 'publish',
+				'description'       => __( 'Current page of the collection.', 'mmt' ),
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_key',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+		);
+		return apply_filters( 'mmt_rest_api_term_params', array_merge( $post_query_params, $query_params ) );
 	}
 
 	/**
