@@ -68,6 +68,17 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			),
 			'schema' => array( $this, 'get_public_item_schema' ),
 		) );
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'migrate_blog_posts' ),
+				//'permission_callback' => array( $this, 'get_item_permissions_check' ),
+				'args'                => array(
+					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
+				),
+			),
+			'schema' => array( $this, 'get_public_item_schema' ),
+		) );
 	}
 
 	/**
@@ -80,18 +91,23 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-
-		// todo: add call per page request
 		$posts_query = new WP_Query(
 			array(
-				'paged'          => $request['page'],
-				'posts_per_page' => $request['per_page'],
+				'post_type'      => 'post',
+				'paged'           => $request['page'],
+				'posts_per_page'  => $request['per_page'],
+				//'fields'         => $request['fields'],
 			)
 		);
 		$posts = array();
+
+		$posts['total_pages'] = $posts_query->max_num_pages;
+		$posts['page'] = $request['page'];
+		$posts['per_page'] = $request['per_page'];
+
 		foreach ( $posts_query->posts as $post ) {
 			$itemdata = $this->prepare_item_for_response( $post, $request );
-			$posts[]  = $this->prepare_response_for_collection( $itemdata );
+			$posts['posts'][]  = $this->prepare_response_for_collection( $itemdata );
 		}
 
 		// Wrap the media in a response object
@@ -110,6 +126,9 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|boolean
 	 */
 	public function get_item_permissions_check( $request ) {
+
+		// add switch to handle case different cases
+
 		$id    = (int) $request['id'];
 		$post  = get_post( $id );
 
@@ -217,6 +236,91 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	}
 
 	/**
+	 * Ingest Posts from Remote Site
+	 *
+	 * @since 0.1.1
+	 */
+	public function migrate_blog_posts( $request ) {
+
+		// Wrap the data in a response object
+		$data = $request->get_body_params();
+		$migrate_posts = $data['posts'];
+
+		// setup url video swapping
+		$current_site_url = get_site_url();
+		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+
+		foreach ( $migrate_posts as $postdata ) {
+
+			// todo: check this for performance
+			$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
+			if ( $post_exist->post_name === $postdata['post_name'] ) {
+				continue;
+			}
+
+			// look up and swap the author email with author id
+			$author_email            = $postdata['post_author'];
+			$existing_author         = get_user_by( 'email', $author_email );
+			$postdata['post_author'] = $existing_author->ID;
+
+			// highly unlikely, but just in case
+			if ( ! $existing_author ) {
+				$postdata['post_author'] = MMT_API::get_migration_author();
+			}
+
+			// swap url in guid
+			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+
+			// swap url in content
+			$postdata['post_content'] = str_replace( $migrate_site_url, $current_site_url, $postdata['post_content'] );
+
+			// make it a post
+			$id = wp_insert_post( $postdata );
+
+			// if no errors add the post meta
+			if ( ! is_wp_error( $id ) ) {
+
+				// set the taxonomy terms
+				foreach ( $postdata['post_terms'] as $term => $val ) {
+					wp_set_object_terms( $id, $val, $term );
+				}
+
+				// set the featured image if there is one
+				if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
+					$migrate_title                          = $postdata['post_meta']['_thumbnail_id'][0];
+					$attachment_post                        = get_page_by_title( $migrate_title, OBJECT, 'attachment' );
+					$postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
+				}
+
+				MMT_API::set_postmeta( $postdata['post_meta'], $id );
+
+				// Track IDs for confirmation on the final media page
+				//$this->migrated_media_ids[] = $id;
+
+				//maybe remove from original array
+				unset( $postdata );
+			}
+			//
+			//if ( ! empty( $this->migrated_media_ids ) ) {
+			//	set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
+			//}
+
+			//todo: what do we do with posts that dont get inserted, recursion call?
+		}
+
+		// todo: fix this. gross
+		$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
+		$data['page'] = absint( $data['page'] ) + 1;
+		$data['total_pages'] = absint( $data['total_pages'] );
+		$data['per_page'] = absint( $data['per_page'] );
+
+		unset( $data['posts'] );
+
+		$response = rest_ensure_response( $data );
+		return $response;
+	}
+
+	/**
 	 * Get the query params for collections
 	 *
 	 * @since 0.1.0
@@ -232,9 +336,9 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_key',
 				'validate_callback' => 'rest_validate_request_arg',
-			),
+			)
 		);
-		return apply_filters( 'mmt_rest_api_term_params', array_merge( $post_query_params, $query_params ) );
+		return apply_filters( 'mmt_rest_api_post_params', array_merge( $post_query_params, $query_params ) );
 	}
 
 	/**

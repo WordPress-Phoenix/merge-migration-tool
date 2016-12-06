@@ -153,6 +153,32 @@ class MMT_Wizard {
 		exit;
 	}
 
+	public function wp_ajax_create_new_post_handler() {
+		// This is unfiltered, not validated and non-sanitized data.
+		// Prepare everything and trust no input
+		$data = $_POST['data'];
+
+		// Do things here.
+		// For example: Insert or update a post
+		$post_id = wp_insert_post( array(
+			'post_title' => $data['title'],
+		) );
+
+		// If everything worked out, pass in any data required for your JS callback.
+		// In this example, wp_insert_post() returned the ID of the newly created post
+		// This adds an `exit`/`die` by itself, so no need to call it.
+		if ( ! is_wp_error( $post_id ) ) {
+			wp_send_json_success( array(
+				'post_id' => $post_id,
+			) );
+		}
+
+		// If something went wrong, the last part will be bypassed and this part can execute:
+		wp_send_json_error( array(
+			'post_id' => $post_id,
+		) );
+	}
+
 	/**
 	 * Wizard Header
 	 *
@@ -389,7 +415,13 @@ class MMT_Wizard {
 
 		// Javascript
 		wp_register_script( 'mmt-wizard', MMT_JS . "mmt-wizard{$suffix}.js", array( 'jquery' ), MMT_VERSION );
-		wp_localize_script( 'mmt-wizard', 'mmt_wizard_params', array() );
+		// todo: add wpApiSettings nonce
+
+		wp_localize_script( 'mmt-wizard', 'mmt_wizard_params', array(
+		        'ajax_url' => admin_url( 'admin-ajax.php' ),
+		        //'root' => esc_url_raw( rest_url() ),
+		        'nonce' => wp_create_nonce( 'wp_rest' )
+        ) );
 	}
 
 	/**

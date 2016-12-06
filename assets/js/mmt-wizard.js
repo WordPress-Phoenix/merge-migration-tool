@@ -619,18 +619,38 @@
 
 })();
 
-(function ( $ ) {
-	$( document ).ready( function () {
-		$( '.button-next' ).on( 'click', function () {
-			console.log( 'testing' );
-			$( '.mmt-content' ).block( {
-				message   : null,
-				overlayCSS: {
-					background: '#fff',
-					opacity   : 0.6
-				}
-			} );
-			return true;
-		} );
-	} );
-})( jQuery );
+// todo: copy to src file when done. gulp not downloaded for plane ride
+(function ($, mmt) {
+
+    $(document).ready(function () {
+
+        $('.button-next').on('click', function () {
+            $('.mmt-content').block({
+                message: null,
+                overlayCSS: {
+                    background: '#fff',
+                    opacity: 0.6
+                }
+            });
+            return true;
+        });
+
+        $('.button-posts').on('click', function (e) {
+            e.preventDefault();
+
+            $.post(
+                mmt.ajax_url,
+                {
+                    action: "mmt_get_posts"
+                },
+                function(response){
+                    console.log( response );
+                }
+            )
+
+        });
+
+
+    });
+
+})(jQuery, mmt_wizard_params || {});

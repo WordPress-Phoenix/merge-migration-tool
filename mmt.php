@@ -45,7 +45,7 @@ if ( ! class_exists( 'MMT' ) ) {
 		 * @access private
 		 * @var string
 		 */
-		private $version = '0.1.0';
+		private $version = '0.1.1';
 
 		/**
 		 * Merge Migration Tool Singleton Instance
