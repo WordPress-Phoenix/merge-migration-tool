@@ -91,6 +91,9 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
+
+		//check_ajax_referer( 'mmt_batch_data', 'security');
+
 		$posts_query = new WP_Query(
 			array(
 				'post_type'      => 'post',

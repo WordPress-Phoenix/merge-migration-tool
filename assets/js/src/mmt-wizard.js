@@ -36,9 +36,9 @@
                     },
                     beforeSend: function (xhr) {
                         // todo: use a nonce
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa('admin:password'));
-                        // xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
                         // xhr.setRequestHeader('X-WP-Nonce', mmt_wizard_params.nonce);
+                        // xhr.setRequestHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-WP-Nonce");
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa('admin:password'));
                     },
                     url: base + endpoint.route,
                     method: endpoint.method,

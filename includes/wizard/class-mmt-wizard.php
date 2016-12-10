@@ -420,7 +420,7 @@ class MMT_Wizard {
 		wp_localize_script( 'mmt-wizard', 'mmt_wizard_params', array(
 		        'ajax_url' => admin_url( 'admin-ajax.php' ),
 		        //'root' => esc_url_raw( rest_url() ),
-		        'nonce' => wp_create_nonce( 'wp_rest' )
+		        'nonce' => wp_create_nonce( 'mmt_batch_data' )
         ) );
 	}
 
