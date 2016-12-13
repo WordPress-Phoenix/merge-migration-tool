@@ -54,11 +54,11 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 					'view'    => array( $this, 'posts_process' ),
 					'handler' => array( $this, 'posts_process_handler' ),
 				),
-				'posts_complete' => array(
-					'name'    => __( 'Post Migration Complete', 'mmt' ),
-					'view'    => array( $this, 'posts_complete' ),
-					'handler' => array( $this, 'posts_complete_handler' ),
-				),
+				//'posts_complete' => array(
+				//	'name'    => __( 'Post Migration Complete', 'mmt' ),
+				//	'view'    => array( $this, 'posts_complete' ),
+				//	'handler' => array( $this, 'posts_complete_handler' ),
+				//),
 			) ),
 		) );
 	}
@@ -116,7 +116,6 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 
 
 	public function posts_process() {
-		//$posts = $this->get_blog_posts();
 		?>
         <form method="post">
             <h3><?php esc_html_e( 'Posts will be migrated:', 'mmt' ); ?></h3>
@@ -140,7 +139,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 
 	public function posts_process_handler() {
 		$this->wizard->verify_security_field();
-		$this->migrate_blog_posts();
+		//$this->migrate_blog_posts();
 		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
 		exit;
 	}

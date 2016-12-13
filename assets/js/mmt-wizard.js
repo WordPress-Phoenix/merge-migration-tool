@@ -677,6 +677,10 @@
                 .done(function (data) {
                     if ( data.page > data.total_pages ) {
                         data.percentage = 100;
+                        $('.button-migrate-posts')
+                            .val('Continue')
+                            .removeClass('button-migrate-posts')
+                            .addClass('button-next');
                     } else {
                         // call more data if available. Yay recursion!
                         self.getPosts(self.api_call_base, self.endpoints.posts, data, self);
