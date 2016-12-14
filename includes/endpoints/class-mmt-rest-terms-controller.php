@@ -67,16 +67,7 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 			'order'      => $request['order'],
 			'orderby'    => $request['orderby'],
 			'hide_empty' => ( isset( $request['hide_empty'] ) ) ? $request['hide_empty'] : false,
-
-			// todo: move this to a filters
-			// add option to hide_empty if needed
 		);
-
-		if ( ! empty( $request['offset'] ) ) {
-			$prepared_args['offset'] = $request['offset'];
-		} else {
-			$prepared_args['offset'] = ( $request['page'] - 1 ) * $prepared_args['number'];
-		}
 
 		/**
 		 * Filter the query arguments, before passing them to `get_terms()`.
@@ -92,7 +83,7 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		 */
 		$prepared_args = apply_filters( 'mmt_rest_api_terms_query', $prepared_args, $request );
 
-		$term_query = get_terms( array( 'category', 'post_tag' ), $prepared_args );
+		$term_query = get_terms( get_object_taxonomies('post'), $prepared_args );
 
 		$response = array();
 		foreach ( $term_query as $term ) {
@@ -116,8 +107,8 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $term, $request ) {
-		$data   = array();
-		$schema = $this->get_item_schema();
+		//$data   = array();
+		//$schema = $this->get_item_schema();
 
 		// Data
 		$data = array(
@@ -150,75 +141,6 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	}
 
 	/**
-	 * Get the User's schema, conforming to JSON Schema
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public function get_item_schema() {
-		$schema   = array(
-			'$schema'    => 'http://json-schema.org/draft-04/schema#',
-			'title'      => 'terms',
-			'type'       => 'object',
-			'properties' => array(
-				'id'          => array(
-					'description' => __( 'Unique identifier for the resource.' ),
-					'type'        => 'integer',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-				'count'       => array(
-					'description' => __( 'Number of published posts for the resource.' ),
-					'type'        => 'integer',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-				'description' => array(
-					'description' => __( 'HTML description of the resource.' ),
-					'type'        => 'string',
-					'context'     => array( 'view' ),
-					'arg_options' => array(
-						'sanitize_callback' => 'wp_filter_post_kses',
-					),
-				),
-				'link'        => array(
-					'description' => __( 'URL to the resource.' ),
-					'type'        => 'string',
-					'format'      => 'uri',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-				'name'        => array(
-					'description' => __( 'HTML title for the resource.' ),
-					'type'        => 'string',
-					'context'     => array( 'view' ),
-					'arg_options' => array(
-						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'required'    => true,
-				),
-				'slug'        => array(
-					'description' => __( 'An alphanumeric identifier for the resource unique to its type.' ),
-					'type'        => 'string',
-					'context'     => array( 'view' ),
-					'arg_options' => array(
-						'sanitize_callback' => array( $this, 'sanitize_slug' ),
-					),
-				),
-				'taxonomy'    => array(
-					'description' => __( 'Type attribution for the resource.' ),
-					'type'        => 'string',
-					'enum'        => array_keys( get_taxonomies() ),
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-			),
-		);
-		return $this->add_additional_fields_schema( $schema );
-	}
-
-	/**
 	 * Get the query params for collections
 	 *
 	 * @since 0.1.0
@@ -227,7 +149,7 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 */
 	public function get_collection_params() {
 		$query_params = parent::get_collection_params();
-		$user_query_params = array(
+		$custom_query_params = array(
 			'hide_empty' => array(
 				'default'           => false,
 				'description'       => __( 'Hide terms without assignment', 'mmt' ),
@@ -237,6 +159,6 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 				'validate_callback' => 'rest_validate_request_arg',
 			),
 		);
-		return apply_filters( 'mmt_rest_api_term_params', array_merge( $user_query_params, $query_params ) );
+		return apply_filters( 'mmt_rest_api_term_params', array_merge( $custom_query_params, $query_params ) );
 	}
 }

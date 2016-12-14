@@ -84,7 +84,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$this->clear_data();
 
 		// Get the remote url from which we are pulling terms.
-		$url             = MMT_API::get_remote_url();
+		$url = MMT_API::get_remote_url();
 		$terms_include_empty_name = MMT_API::get_terms_empty_input_name();
 
 		?>
@@ -367,7 +367,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$migrateable_terms  = array();
 
 		// Get Current Terms
-		$current_terms_query = get_terms( array( 'post_tag', 'category' ), array( 'hide_empty' => false ) );
+        $taxonomies = get_object_taxonomies( 'post' );
+		$current_terms_query = get_terms( $taxonomies, array( 'hide_empty' => false ) );
 		foreach ( $current_terms_query as $term ) {
 			$current_site_terms[] = array( 'term' => $term, 'slug' => $term->slug );
 		}
@@ -379,7 +380,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			$match_slug = array_search( $remote_term['slug'], array_column( $current_site_terms, 'slug' ), true );
 
 			// Both Conflict
-			if ( ( false !== $match_slug ) ) {
+			if ( false !== $match_slug && taxonomy_exists( $remote_term['taxonomy'] ) ) {
 				$referenced_terms[] = array(
 					'term'         => $remote_term,
 					'current_term' => $current_site_terms[ $match_slug ]['term'],
@@ -512,6 +513,14 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				}
 
 				$terms_args['parent'] = $parent_term->term_id;
+			}
+
+			/**
+			 * A taxonomy will be registered if it does not exist on the site that data is receiving
+			 * the import. If a new term is add on the sending send
+			 */
+			if ( ! taxonomy_exists( $term_taxonomy ) ) {
+				register_taxonomy( $term_taxonomy, 'post' );
 			}
 
 			$term_array = wp_insert_term( $term_name, $term_taxonomy, $terms_args );
