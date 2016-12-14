@@ -24,6 +24,9 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 */
 	protected $rest_base = 'terms';
 
+
+	protected $term_query;
+
 	/**
 	 * MMT_REST_Terms_Controller constructor.
 	 *
@@ -83,7 +86,15 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		 */
 		$prepared_args = apply_filters( 'mmt_rest_api_terms_query', $prepared_args, $request );
 
+		// TODO: this needs to move to its own function
 		$term_query = get_terms( get_object_taxonomies('post'), $prepared_args );
+
+		$ff = [];
+		foreach( $term_query as $q ) {
+			$ff[ $q->term_id ] = (array) $q;
+		}
+
+		$this->term_query = $ff;
 
 		$response = array();
 		foreach ( $term_query as $term ) {
@@ -109,6 +120,11 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	public function prepare_item_for_response( $term, $request ) {
 		//$data   = array();
 		//$schema = $this->get_item_schema();
+		$parent_slug = '';
+		if ( $term->parent !== 0 ) {
+			$arr = $this->term_query;
+			$parent_slug = $arr[ $term->parent ]['slug'];
+		}
 
 		// Data
 		$data = array(
@@ -118,6 +134,7 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 			'description' => $term->description,
 			'taxonomy'    => $term->taxonomy,
 			'parent'      => $term->parent,
+			'parent_slug' => $parent_slug,
 			'link'        => get_term_link( $term ),
 			'count'       => (int) $term->count,
 		);
