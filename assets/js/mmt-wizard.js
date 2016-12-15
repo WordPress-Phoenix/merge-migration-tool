@@ -639,8 +639,10 @@
             api_home_base: 'http://one.merger-multisite.dev/wp-json/mmt/v1/',
             api_call_base: 'http://two.merger-multisite.dev/wp-json/mmt/v1/',
             endpoints: {
-                posts: {route: 'posts', method: 'GET'},
-                batch: {route: 'posts/batch', method: 'POST'}
+                // posts: {route: 'posts', method: 'GET'},
+                // batch: {route: 'posts/batch', method: 'POST'}
+                posts: {route: 'media', method: 'GET'},
+                batch: {route: 'media/batch', method: 'POST'}
             },
             init: function () {
                 var self = this;
@@ -671,8 +673,9 @@
                     call = this.sendData(base, endpoint, data, self);
 
                 call.then(function (data) {
+                    console.log( data );
                     // if we have posts, we need to import them
-                    return self.sendData(self.api_home_base, self.endpoints.batch, data, self);
+                    return self.sendData(self.api_home_base, self.endpoints.batch, data );
                 })
                 .done(function (data) {
                     if ( data.page > data.total_pages ) {
@@ -683,7 +686,7 @@
                             .addClass('button-next');
                     } else {
                         // call more data if available. Yay recursion!
-                        self.getPosts(self.api_call_base, self.endpoints.posts, data, self);
+                        self.getPosts(self.api_call_base, self.endpoints.posts, data );
                     }
                     $('.posts-batch-progress').animate({width: data.percentage + '%'}, 50, "swing");
                 });

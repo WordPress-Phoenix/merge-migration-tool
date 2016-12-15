@@ -13,6 +13,7 @@ var lineec       = require( 'gulp-line-ending-corrector' );
 var filter       = require( 'gulp-filter' );
 var sourcemaps   = require( 'gulp-sourcemaps' );
 var notify       = require( 'gulp-notify' );
+var stripDebug   = require('gulp-strip-debug');
 
 // paths
 var paths = {
@@ -114,12 +115,14 @@ gulp.task( 'javascript-main', function () {
 		.pipe( concat( 'mmt.js' ) )
 		.pipe( lineec() ) // Consistent Line Endings for non UNIX systems.
 		.pipe( gulp.dest( paths.jsDest ) )
+        .pipe(stripDebug())
 		.pipe( rename( {
 			basename: 'mmt',
 			suffix  : '.min'
 		} ) )
 		.pipe( uglify() )
 		.pipe( lineec() ) // Consistent Line Endings for non UNIX systems.
+        .pipe(stripDebug())
 		.pipe( gulp.dest( paths.jsDest ) )
 		.pipe( notify( { message: 'TASK: Main "javascript" Completed!', onLast: true } ) );
 } );
@@ -130,12 +133,14 @@ gulp.task( 'javascript-wizard', function () {
 		.pipe( concat( 'mmt-wizard.js' ) )
 		.pipe( lineec() ) // Consistent Line Endings for non UNIX systems.
 		.pipe( gulp.dest( paths.jsDest ) )
+        .pipe( stripDebug() )
 		.pipe( rename( {
 			basename: 'mmt-wizard',
 			suffix  : '.min'
 		} ) )
 		.pipe( uglify() )
 		.pipe( lineec() ) // Consistent Line Endings for non UNIX systems.
+        .pipe( stripDebug() )
 		.pipe( gulp.dest( paths.jsDest ) )
 		.pipe( notify( { message: 'TASK: Wizard "javascript" Completed!', onLast: true } ) );
 } );

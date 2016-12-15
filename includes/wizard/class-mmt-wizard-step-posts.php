@@ -139,7 +139,6 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 
 	public function posts_process_handler() {
 		$this->wizard->verify_security_field();
-		//$this->migrate_blog_posts();
 		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
 		exit;
 	}

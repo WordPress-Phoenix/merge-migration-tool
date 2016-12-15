@@ -25,14 +25,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	protected $rest_base = 'posts';
 
 	/**
-	 * Rest Single Item Base
-	 *
-	 * @since 0.1.0
-	 * @var string
-	 */
-	protected $rest_single_base = 'post';
-
-	/**
 	 * MMT_REST_Posts_Controller constructor.
 	 *
 	 * @since 0.1.0
@@ -57,7 +49,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'args'                => $this->get_collection_params(),
 			),
 		) );
-		register_rest_route( $this->namespace, '/' . $this->rest_single_base . '/(?P<id>[\d]+)', array(
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>[\d]+)', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
@@ -65,19 +57,13 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'args'                => array(
 					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
 				),
-			),
-			'schema' => array( $this, 'get_public_item_schema' ),
+			)
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'migrate_blog_posts' ),
-				//'permission_callback' => array( $this, 'get_item_permissions_check' ),
-				'args'                => array(
-					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
-				),
 			),
-			'schema' => array( $this, 'get_public_item_schema' ),
 		) );
 	}
 
@@ -99,7 +85,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'post_type'      => 'post',
 				'paged'           => $request['page'],
 				'posts_per_page'  => $request['per_page'],
-				//'fields'         => $request['fields'],
 			)
 		);
 		$posts = array();
@@ -255,7 +240,8 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 
 		foreach ( $migrate_posts as $postdata ) {
 
-			// todo: check this for performance
+			// Make sure we the post does not exist already
+			// todo: is it enough to check slug
 			$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
 			if ( $post_exist->post_name === $postdata['post_name'] ) {
 				continue;
@@ -311,7 +297,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			//todo: what do we do with posts that dont get inserted, recursion call?
 		}
 
-		// todo: fix this. gross
+
 		$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
 		$data['page'] = absint( $data['page'] ) + 1;
 		$data['total_pages'] = absint( $data['total_pages'] );

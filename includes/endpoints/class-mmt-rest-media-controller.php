@@ -60,6 +60,12 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			),
 			'schema' => array( $this, 'get_public_item_schema' ),
 		) );
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
+			array(
+				'methods'  => WP_REST_Server::CREATABLE,
+				'callback' => array( $this, 'migrate_media_posts' ),
+			),
+		) );
 	}
 
 	/**
@@ -72,19 +78,27 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$media = array();
 
-		$media_items = new WP_Query(
+		//check_ajax_referer( 'mmt_batch_data', 'security');
+
+		$media_query = new WP_Query(
 			array(
 				'post_type'      => 'attachment',
 				'post_status'    => 'inherit',
-				'posts_per_page' => -1,
+				'paged'          => $request['page'],
+				'posts_per_page' => $request['per_page'],
 			)
 		);
 
-		foreach ( $media_items->posts as $media_item ) {
-			$itemdata = $this->prepare_item_for_response( $media_item, $request );
-			$media[]  = $this->prepare_response_for_collection( $itemdata );
+		$media = array();
+
+		$media['total_pages'] = $media_query->max_num_pages;
+		$media['page']        = $request['page'];
+		$media['per_page']    = $request['per_page'];
+
+		foreach ( $media_query->posts as $media_item ) {
+			$itemdata         = $this->prepare_item_for_response( $media_item, $request );
+			$media['posts'][] = $this->prepare_response_for_collection( $itemdata );
 		}
 
 		// Wrap the media in a response object
@@ -141,29 +155,25 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param mixed           $media_item The Media Item object.
-	 * @param WP_REST_Request $request    Request object.
+	 * @param mixed           $media   The Media Item object.
+	 * @param WP_REST_Request $request Request object.
 	 *
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $media, $request ) {
-		$data   = array();
-		$schema = $this->get_item_schema();
-
-		// grab any post meta
 		$meta = get_post_meta( $media->ID );
 
 		// swap the parent slug for migrating
 		// The post parent slug cannot be saved as a string, so it is
 		// mapped to postmeta and will be deleted upon migration cleanup
 		if ( 0 !== $media->post_parent ) {
-			$parent_slug = get_post( $media->post_parent );
-			$parent_slug = $parent_slug->post_name;
+			$parent_slug                      = get_post( $media->post_parent );
+			$parent_slug                      = $parent_slug->post_name;
 			$meta['_migrated_data']['parent'] = $parent_slug;
 		}
 
 		$meta['_migrated_data']['migrated'] = true;
-		$meta['_migrated_data'] = maybe_serialize( $meta['_migrated_data'] );
+		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
 
 		//swap the user id with email for migrating
 		$author = get_the_author_meta( 'email', $media->post_author );
@@ -209,6 +219,70 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		 * @param WP_REST_Request  $request    Request object.
 		 */
 		return apply_filters( 'mmt_rest_api_prepare_media', $response, $media_item, $request );
+	}
+
+	/**
+	 * Ingest Media Posts from Remote Site
+	 *
+	 * @since 0.1.1
+	 */
+	public function migrate_media_posts( $request ) {
+
+		$data          = $request->get_body_params();
+		$migrate_posts = $data['posts'];
+
+		foreach ( $migrate_posts as $postdata ) {
+
+			// Make sure we the post does not exist already
+			// todo: is it enough to check slug
+			$post_exist = get_page_by_title( $postdata['post_name'], OBJECT, 'attachment' );
+			if ( $post_exist->post_name === $postdata['post_name'] ) {
+				continue;
+			}
+
+			// look up and swap the author email with author id
+			$author_email            = $postdata['post_author'];
+			$existing_author         = get_user_by( 'email', $author_email );
+			$postdata['post_author'] = $existing_author->ID;
+
+			// ensure some sort of author is selected
+			if ( ! $existing_author ) {
+				$postdata['post_author'] = MMT_API::get_migration_author();
+			}
+
+			// handle url swapping
+			$current_site_url = get_site_url();
+			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+
+			// make it a post
+			$id = wp_insert_post( $postdata );
+
+			// if no errors add the post meta
+			if ( ! is_wp_error( $id ) ) {
+				MMT_API::set_postmeta( $postdata['post_meta'], $id );
+
+				//maybe remove from original array
+				unset( $postdata );
+			}
+
+			if ( ! empty( $this->migrated_media_ids ) ) {
+				set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
+			}
+
+			//todo: what do we do with posts that do not get inserted, recursion call?
+		}
+
+		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
+		$data['page']        = absint( $data['page'] ) + 1;
+		$data['total_pages'] = absint( $data['total_pages'] );
+		$data['per_page']    = absint( $data['per_page'] );
+
+		unset( $data['posts'] );
+
+		$response = rest_ensure_response( $data );
+
+		return $response;
 	}
 
 	/**
