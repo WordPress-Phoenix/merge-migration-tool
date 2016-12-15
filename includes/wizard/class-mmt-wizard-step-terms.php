@@ -393,13 +393,9 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			$migrateable_terms[ $remote_term['id'] ] = $remote_term;
 		}
 
-		// Swap parent ids with slugs for relationships
-		$migrateable_terms = $this->process_term_relationship( $migrateable_terms );
-
 		//refactor array to other side
 		$migrateable_terms = MMT_API::map( $migrateable_terms, function ( $term ) {
 			array_shift( $term );
-
 			return $term;
 		} );
 
@@ -407,23 +403,6 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		set_transient( 'mmt_terms_conflicted', $conflicted_terms, DAY_IN_SECONDS );
 		set_transient( 'mmt_terms_referenced', $referenced_terms, DAY_IN_SECONDS );
 		set_transient( 'mmt_terms_migrateable', $migrateable_terms, DAY_IN_SECONDS );
-	}
-
-	/**
-	 * Map the parent slug to the term before migrating
-	 *
-	 * @param $terms
-	 *
-	 * @return mixed
-	 */
-	public function process_term_relationship( $terms ) {
-		foreach ( $terms as $term ) {
-			if ( $term['parent'] ) {
-				$terms[ $term['id'] ]['migrate_parent'] = $terms[ $term['parent'] ]['slug'];
-			}
-		}
-
-		return $terms;
 	}
 
 	/**
@@ -504,8 +483,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				'parent'      => 0,
 			);
 
-			if ( array_key_exists( 'migrate_parent', $term ) ) {
-				$parent_term = get_term_by( 'slug', $term['migrate_parent'], $term['taxonomy'] );
+			if ( array_key_exists( 'parent_slug', $term ) && isset( $term['parent_slug'] ) ) {
+				$parent_term = get_term_by( 'slug', $term['parent_slug'], $term['taxonomy'] );
 
 				//  The term parent might not have been imported yet. Come back to it the next time around
 				if ( false === $parent_term ) {
@@ -516,8 +495,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			}
 
 			/**
-			 * A taxonomy will be registered if it does not exist on the site that data is receiving
-			 * the import. If a new term is add on the sending send
+			 * A taxonomy will be registered in order to import, if it does not exist on the site receiving the data.
+			 * The new term will need to be registered on with the `init` hook to display in the admin panel.
 			 */
 			if ( ! taxonomy_exists( $term_taxonomy ) ) {
 				register_taxonomy( $term_taxonomy, 'post' );

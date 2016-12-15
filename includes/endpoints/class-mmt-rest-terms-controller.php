@@ -24,7 +24,14 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 */
 	protected $rest_base = 'terms';
 
-
+	/**
+	 * Term Query
+	 *
+	 * Holds values of mapped term data
+	 *
+	 * @since 0.1.0
+	 * @var string
+	 */
 	protected $term_query;
 
 	/**
@@ -86,15 +93,11 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		 */
 		$prepared_args = apply_filters( 'mmt_rest_api_terms_query', $prepared_args, $request );
 
-		// TODO: this needs to move to its own function
+		// TODO: maybe add filters for taxonomies
 		$term_query = get_terms( get_object_taxonomies('post'), $prepared_args );
 
-		$ff = [];
-		foreach( $term_query as $q ) {
-			$ff[ $q->term_id ] = (array) $q;
-		}
-
-		$this->term_query = $ff;
+		// Map data by key for parent relationship lookup on import
+		$this->term_query = $this->create_taxonomy_lookup( $term_query );
 
 		$response = array();
 		foreach ( $term_query as $term ) {
@@ -118,9 +121,8 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $term, $request ) {
-		//$data   = array();
-		//$schema = $this->get_item_schema();
 		$parent_slug = '';
+
 		if ( $term->parent !== 0 ) {
 			$arr = $this->term_query;
 			$parent_slug = $arr[ $term->parent ]['slug'];
@@ -177,5 +179,21 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 			),
 		);
 		return apply_filters( 'mmt_rest_api_term_params', array_merge( $custom_query_params, $query_params ) );
+	}
+
+	/**
+	 * Map data with key as index
+	 *
+	 * @param $terms
+	 *
+	 * @return array
+	 */
+	public function create_taxonomy_lookup( $terms ) {
+		$items = [];
+		foreach( $terms as $term ) {
+			$items[ $term->term_id ] = (array) $term;
+		}
+
+		return $items;
 	}
 }
