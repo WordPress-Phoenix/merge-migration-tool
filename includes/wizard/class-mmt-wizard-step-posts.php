@@ -41,6 +41,8 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 	 * @since 1.0.0
 	 */
 	public function register() {
+		add_filter( 'mmt_js_params', array( $this, 'wizard_object_data' ) );
+
 		return apply_filters( "mmt_wizard_step_{$this->name}", array(
 			'name' => __( 'Posts', 'mmt' ),
 			'sub_steps' => apply_filters( "mmtm_wizard_step_{$this->name}_sub_steps", array(
@@ -61,6 +63,31 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 				//),
 			) ),
 		) );
+	}
+
+	/**
+	 * Localize object data for js
+	 *
+	 * @param $params
+	 *
+	 * @return array
+	 */
+	public function wizard_object_data( $params ) {
+		$data = array(
+			'endpoints' => array(
+				'posts' => array(
+					'route'  => 'posts',
+					'method' => 'GET',
+				),
+				'batch' => array(
+					'route'  => 'posts/batch',
+					'method' => 'POST',
+				),
+			)
+		);
+		$params = wp_parse_args( $data, $params );
+
+		return $params;
 	}
 
 	/**

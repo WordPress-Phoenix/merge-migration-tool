@@ -31,6 +31,9 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 	 * @since 1.0.0
 	 */
 	public function register() {
+
+		add_filter( 'mmt_js_params', array( $this, 'wizard_object_data') );
+
 		return apply_filters( "mmt_wizard_step_{$this->name}", array(
 			'name'      => __( 'Media', 'mmt' ),
 			'sub_steps' => apply_filters( "mmtm_wizard_step_{$this->name}_sub_steps", array(
@@ -46,6 +49,31 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 				),
 			) ),
 		) );
+	}
+
+	/**
+     * Localize object data for js
+     *
+	 * @param $params
+	 *
+	 * @return array
+	 */
+	public function wizard_object_data( $params ) {
+		$data = array(
+			'endpoints' => array(
+				'posts' => array(
+					'route'  => 'media',
+					'method' => 'GET',
+				),
+				'batch' => array(
+					'route'  => 'media/batch',
+					'method' => 'POST',
+				),
+			)
+		);
+		$params = wp_parse_args( $data, $params );
+
+		return $params;
 	}
 
 	/**
@@ -124,7 +152,7 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
             </div>
 			<p class="mmt-actions step">
 				<input type="submit" class="button-primary button button-large button-migrate-posts"
-				       value="<?php esc_attr_e( 'Continue', 'mmt' ); ?>" name="save_sub_step"/>
+				       value="<?php esc_attr_e( 'Migrate Media', 'mmt' ); ?>" name="save_sub_step"/>
 				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
 				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>

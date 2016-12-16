@@ -1,4 +1,4 @@
-(function ($, mmt) {
+(function ($, mmtWizardParams) {
     'use strict';
 
     $(document).ready(function () {
@@ -14,21 +14,20 @@
             return true;
         });
 
+        /**
+         * Feels a little strange creating a new object here, but this is working for now.
+         * todo: combine into mmtWizardParams object
+         */
         var mmt = {
-            api_home_base: 'http://one.merger-multisite.dev/wp-json/mmt/v1/',
-            api_call_base: 'http://two.merger-multisite.dev/wp-json/mmt/v1/',
-            endpoints: {
-                // posts: {route: 'posts', method: 'GET'},
-                // batch: {route: 'posts/batch', method: 'POST'}
-                posts: {route: 'media', method: 'GET'},
-                batch: {route: 'media/batch', method: 'POST'}
+            queryVars: {
+                per_page: 3
             },
             init: function () {
                 var self = this;
 
                 $(document.body).on('click', '.button-migrate-posts', function (e) {
                     e.preventDefault();
-                    self.getPosts(self.api_call_base, self.endpoints.posts, {per_page: 3}, self);
+                    self.getPosts(mmtWizardParams.apiCallBase, mmtWizardParams.endpoints.posts, {per_page: 3}, self);
                 });
             },
             sendData: function (base, endpoint, data) {
@@ -54,19 +53,19 @@
                 call.then(function (data) {
                     console.log( data );
                     // if we have posts, we need to import them
-                    return self.sendData(self.api_home_base, self.endpoints.batch, data );
+                    return self.sendData( mmtWizardParams.apiHomeBase, mmtWizardParams.endpoints.batch, data );
                 })
                 .done(function (data) {
                     if ( data.page > data.total_pages ) {
-                        data.percentage = 100;
                         $('.button-migrate-posts')
                             .val('Continue')
                             .removeClass('button-migrate-posts')
                             .addClass('button-next');
                     } else {
                         // call more data if available. Yay recursion!
-                        self.getPosts(self.api_call_base, self.endpoints.posts, data );
+                        self.getPosts( mmtWizardParams.apiCallBase, mmtWizardParams.endpoints.posts, data );
                     }
+
                     $('.posts-batch-progress').animate({width: data.percentage + '%'}, 50, "swing");
                 });
             }
@@ -75,4 +74,4 @@
 
     });
 
-})(jQuery, mmt_wizard_params || {});
+})(jQuery, mmtWizardParams || {});

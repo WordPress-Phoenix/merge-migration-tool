@@ -54,11 +54,11 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
-				'args'                => array(
-					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
-				),
+				//'args'                => array(
+				//	'context' => $this->get_context_param( array( 'default' => 'view' ) ),
+				//),
 			),
-			'schema' => array( $this, 'get_public_item_schema' ),
+			//'schema' => array( $this, 'get_public_item_schema' ),
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
 			array(
@@ -274,6 +274,11 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		}
 
 		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
+
+		if ( $data['page'] > $data['total_pages'] ) {
+			$data['percentage'] = 100;
+		}
+
 		$data['page']        = absint( $data['page'] ) + 1;
 		$data['total_pages'] = absint( $data['total_pages'] );
 		$data['per_page']    = absint( $data['per_page'] );

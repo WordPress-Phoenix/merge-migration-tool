@@ -417,11 +417,14 @@ class MMT_Wizard {
 		wp_register_script( 'mmt-wizard', MMT_JS . "mmt-wizard{$suffix}.js", array( 'jquery' ), MMT_VERSION );
 		// todo: add wpApiSettings nonce
 
-		wp_localize_script( 'mmt-wizard', 'mmt_wizard_params', array(
-		        'ajax_url' => admin_url( 'admin-ajax.php' ),
-		        //'root' => esc_url_raw( rest_url() ),
-		        'nonce' => wp_create_nonce( 'mmt_batch_data' )
-        ) );
+        $data = apply_filters('mmt_js_params', array(
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'apiHomeBase' => esc_url_raw( get_site_url() ) . '/wp-json/mmt/v1/',
+            'apiCallBase' => esc_url_raw( rtrim( MMT_API::get_remote_url(), '/' ) ) . '/wp-json/mmt/v1/',
+            'nonce' => wp_create_nonce( 'mmt_batch_data' )
+        ));
+
+		wp_localize_script( 'mmt-wizard', 'mmtWizardParams', $data);
 	}
 
 	/**
