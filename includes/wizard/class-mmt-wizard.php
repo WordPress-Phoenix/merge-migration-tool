@@ -421,7 +421,17 @@ class MMT_Wizard {
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'apiHomeBase' => esc_url_raw( get_site_url() ) . '/wp-json/mmt/v1/',
             'apiCallBase' => esc_url_raw( rtrim( MMT_API::get_remote_url(), '/' ) ) . '/wp-json/mmt/v1/',
-            'nonce' => wp_create_nonce( 'mmt_batch_data' )
+            'nonce' => wp_create_nonce( 'mmt_batch_data' ),
+	        'endpoints' => array(
+		        'posts' => array(
+			        'route'  => $_GET['step'],
+			        'method' => 'GET',
+		        ),
+		        'batch' => array(
+			        'route'  => $_GET['step'] . '/batch',
+			        'method' => 'POST',
+		        ),
+	        )
         ));
 
 		wp_localize_script( 'mmt-wizard', 'mmtWizardParams', $data);

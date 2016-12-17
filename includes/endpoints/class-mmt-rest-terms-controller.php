@@ -121,12 +121,6 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $term, $request ) {
-		$parent_slug = '';
-
-		if ( $term->parent !== 0 ) {
-			$arr = $this->term_query;
-			$parent_slug = $arr[ $term->parent ]['slug'];
-		}
 
 		// Data
 		$data = array(
@@ -135,11 +129,15 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 			'slug'        => $term->slug,
 			'description' => $term->description,
 			'taxonomy'    => $term->taxonomy,
-			'parent'      => $term->parent,
-			'parent_slug' => $parent_slug,
 			'link'        => get_term_link( $term ),
 			'count'       => (int) $term->count,
+			'parent'      => $term->parent,
 		);
+
+		if ( $term->parent !== 0 ) {
+			$arr         = $this->term_query;
+			$data['parent_slug'] = $arr[ $term->parent ]['slug'];
+		}
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
 
