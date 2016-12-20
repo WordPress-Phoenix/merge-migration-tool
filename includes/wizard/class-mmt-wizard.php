@@ -426,6 +426,7 @@ class MMT_Wizard {
 		        'posts' => array(
 			        'route'  => $_GET['step'],
 			        'method' => 'GET',
+                    'per_page' => ( $_GET['step'] == 'media' ? 100 : 50 )
 		        ),
 		        'batch' => array(
 			        'route'  => $_GET['step'] . '/batch',

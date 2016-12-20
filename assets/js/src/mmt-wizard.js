@@ -19,15 +19,13 @@
          * todo: combine into mmtWizardParams object
          */
         var mmt = {
-            queryVars: {
-                per_page: 3
-            },
             init: function () {
-                var self = this;
+                var self = this,
+                    p = mmtWizardParams.endpoints.posts.per_page;
 
                 $(document.body).on('click', '.button-migrate-posts', function (e) {
                     e.preventDefault();
-                    self.getPosts(mmtWizardParams.apiCallBase, mmtWizardParams.endpoints.posts, {per_page: 3}, self);
+                    self.getPosts(mmtWizardParams.apiCallBase, mmtWizardParams.endpoints.posts, { per_page: p } );
                 });
             },
             sendData: function (base, endpoint, data) {
@@ -47,6 +45,11 @@
                 })
             },
             getPosts: function (base, endpoint, data) {
+
+                // todo: check/disable heartbeat
+                // todo: run xdebug on initial plugin constructor
+                // todo: bump memory and batch limit
+
                 var self = this,
                     call = this.sendData(base, endpoint, data, self);
 
@@ -56,6 +59,16 @@
                     return self.sendData( mmtWizardParams.apiHomeBase, mmtWizardParams.endpoints.batch, data );
                 })
                 .done(function (data) {
+
+                    if ( data.conflicted ) {
+                        for (var i = data.conflicted.length - 1; i >= 0; i--) {
+                            $('.media-migrate-conflicts').append('<li>('+ data.conflicted[i].ID +') - ' + data.conflicted[i].guid + '</li>');
+                        }
+                    }
+
+                    console.log('batch processed');
+                    // console.log( data );
+
                     if ( data.page > data.total_pages ) {
                         $('.button-migrate-posts')
                             .val('Continue')
@@ -63,6 +76,7 @@
                             .addClass('button-next');
                     } else {
                         // call more data if available. Yay recursion!
+
                         self.getPosts( mmtWizardParams.apiCallBase, mmtWizardParams.endpoints.posts, data );
                     }
 

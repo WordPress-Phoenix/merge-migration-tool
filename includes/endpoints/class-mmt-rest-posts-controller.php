@@ -83,12 +83,14 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		$posts_query = new WP_Query(
 			array(
 				'post_type'      => 'post',
+				'post_status'     => 'any',
 				'paged'           => $request['page'],
-				'posts_per_page'  => $request['per_page'],
+				'posts_per_page'  => $request['per_page']
 			)
 		);
 		$posts = array();
 
+		$posts['total_posts'] = wp_count_posts( 'post' );
 		$posts['total_pages'] = $posts_query->max_num_pages;
 		$posts['page'] = $request['page'];
 		$posts['per_page'] = $request['per_page'];
@@ -124,7 +126,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			return new WP_Error( 'rest_post_invalid_id', __( 'Invalid post id.', 'mmt' ), array( 'status' => 404 ) );
 		}
 
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_single_base );
+		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_base );
 	}
 
 	/**
@@ -161,9 +163,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $post, $request ) {
-		$data   = array();
-		$schema = $this->get_item_schema();
-
 		$author = get_the_author_meta( 'email', $post->post_author );
 
 		// grab any post meta
@@ -172,13 +171,19 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		if ( isset( $meta['_thumbnail_id'] ) ) {
 			$image_id = $meta['_thumbnail_id'][0];
 			$featured_image = get_post( $image_id );
-			$meta['_thumbnail_id'][0] = $featured_image->post_name;
+
+			/**
+			 * When a post is imported, we need to ensure the featured image has been imported.
+			 * Using the guid, there is a unique value to compare against.
+			 */
+			$meta['_thumbnail_id'][0] = $featured_image->guid;
 		}
 
 		$meta['_migrated_data']['migrated'] = true;
 		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
 
 		$data = array(
+			'ID'           			=> $post->ID,
 			'post_author'           => $author,
 			'post_date'             => $post->post_date,
 			'post_date_gmt'         => $post->post_date_gmt,
@@ -239,12 +244,44 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
 
 		foreach ( $migrate_posts as $postdata ) {
+			$maybe_conflict_guid = $postdata['guid'];
 
-			// Make sure we the post does not exist already
-			// todo: is it enough to check slug
-			$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
-			if ( $post_exist->post_name === $postdata['post_name'] ) {
+			// swap url in guid
+			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+
+			$post_exist = MMT_API::get_post_by_guid( $postdata['guid'], OBJECT, 'post' );
+			if ( $post_exist->guid === $postdata['guid'] ) {
+
+				$data['conflicted'][] = [
+					'ID' => $postdata['ID'],
+					'guid' => $maybe_conflict_guid
+				];
 				continue;
+			}
+
+			/**
+			 * Need to check if featured image has been imported
+			 * todo: maybe add an override in the admin?
+			 */
+			// set the featured image if there is one
+			if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
+				$featured_image_guid = str_replace( $migrate_site_url, $current_site_url, $postdata['post_meta']['_thumbnail_id'][0] );
+				$attachment_featured_image = MMT_API::get_post_by_guid( $featured_image_guid, OBJECT, 'attachment' );
+
+				/**
+				 * If the attachment post does not exist, bail on import
+				 * todo: maybe break out posts without featured images into their own list for error reporting
+				 */
+				if ( false === $attachment_featured_image ) {
+					$data['conflicted'][] = [
+						'ID'   => $postdata['ID'],
+						'guid' => $maybe_conflict_guid
+					];
+					continue;
+				}
+
+				// If the post is good, set the id of the found post.
+				$postdata['post_meta']['_thumbnail_id'] = $attachment_featured_image->ID;
 			}
 
 			// look up and swap the author email with author id
@@ -257,8 +294,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				$postdata['post_author'] = MMT_API::get_migration_author();
 			}
 
-			// swap url in guid
-			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+			unset( $postdata['ID'] );
 
 			// swap url in content
 			$postdata['post_content'] = str_replace( $migrate_site_url, $current_site_url, $postdata['post_content'] );
@@ -274,31 +310,19 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 					wp_set_object_terms( $id, $val, $term );
 				}
 
-				// set the featured image if there is one
-				if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
-					$migrate_title                          = $postdata['post_meta']['_thumbnail_id'][0];
-					$attachment_post                        = get_page_by_title( $migrate_title, OBJECT, 'attachment' );
-					$postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
-				}
-
 				MMT_API::set_postmeta( $postdata['post_meta'], $id );
-
-				// Track IDs for confirmation on the final media page
-				//$this->migrated_media_ids[] = $id;
 
 				//maybe remove from original array
 				unset( $postdata );
 			}
-			//
-			//if ( ! empty( $this->migrated_media_ids ) ) {
-			//	set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
-			//}
-
-			//todo: what do we do with posts that dont get inserted, recursion call?
 		}
 
-
 		$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
+
+		if ( $data['page'] > $data['total_pages'] ) {
+			$data['percentage'] = 100;
+		}
+
 		$data['page'] = absint( $data['page'] ) + 1;
 		$data['total_pages'] = absint( $data['total_pages'] );
 		$data['per_page'] = absint( $data['per_page'] );
@@ -327,6 +351,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'validate_callback' => 'rest_validate_request_arg',
 			)
 		);
+
 		return apply_filters( 'mmt_rest_api_post_params', array_merge( $post_query_params, $query_params ) );
 	}
 

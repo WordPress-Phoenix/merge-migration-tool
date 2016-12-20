@@ -563,6 +563,45 @@ class MMT_API {
 		}
 	}
 
+	/**
+	 * Retrieve post by querying guid
+	 *
+	 * @param        $guid
+	 * @param string $output
+	 * @param string $post_type
+	 *
+	 * @return array|null|WP_Post
+	 */
+	public static function get_post_by_guid( $guid, $output = OBJECT, $post_type = 'post' ) {
+		global $wpdb;
+
+		if ( is_array( $post_type ) ) {
+			$post_type           = esc_sql( $post_type );
+			$post_type_in_string = "'" . implode( "','", $post_type ) . "'";
+			$sql                 = $wpdb->prepare( "
+			SELECT ID
+			FROM $wpdb->posts
+			WHERE guid = %s
+			AND post_type IN ($post_type_in_string)
+		", $guid );
+		} else {
+			$sql = $wpdb->prepare( "
+			SELECT ID
+			FROM $wpdb->posts
+			WHERE guid = %s
+			AND post_type = %s
+		", $guid, $post_type );
+		}
+
+		$post = $wpdb->get_var( $sql );
+
+		if ( $post ) {
+			return get_post( $post, $output );
+		}
+
+		return false;
+	}
+
 }
 
 new MMT_API();

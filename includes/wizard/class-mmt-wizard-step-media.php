@@ -130,6 +130,9 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>
 			</p>
+			<div>
+				<ul class="media-migrate-conflicts"></ul>
+			</div>
 		</form>
 		<?php
 	}

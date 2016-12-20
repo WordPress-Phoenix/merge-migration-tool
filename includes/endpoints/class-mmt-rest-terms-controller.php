@@ -94,15 +94,24 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		$prepared_args = apply_filters( 'mmt_rest_api_terms_query', $prepared_args, $request );
 
 		// TODO: maybe add filters for taxonomies
-		$term_query = get_terms( get_object_taxonomies('post'), $prepared_args );
+		$registered_terms = get_object_taxonomies( 'post' );
+		$term_query = get_terms( $registered_terms, $prepared_args );
 
 		// Map data by key for parent relationship lookup on import
 		$this->term_query = $this->create_taxonomy_lookup( $term_query );
 
+
 		$response = array();
+
+		$response['terms'] = get_object_taxonomies( 'post' );
+
+		foreach ( $registered_terms as $key => $registered_term ) {
+			$response['counts'][ $registered_term ] = wp_count_terms( $registered_term, array( 'hide_empty' => false ) );
+		}
+
 		foreach ( $term_query as $term ) {
 			$data       = $this->prepare_item_for_response( $term, $request );
-			$response[] = $this->prepare_response_for_collection( $data );
+			$response['posts'][] = $this->prepare_response_for_collection( $data );
 		}
 
 		$response = rest_ensure_response( $response );

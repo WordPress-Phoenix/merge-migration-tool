@@ -92,6 +92,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 
 		$media = array();
 
+		$media['total_posts'] = wp_count_posts('attachment');
 		$media['total_pages'] = $media_query->max_num_pages;
 		$media['page']        = $request['page'];
 		$media['per_page']    = $request['per_page'];
@@ -163,9 +164,12 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	public function prepare_item_for_response( $media, $request ) {
 		$meta = get_post_meta( $media->ID );
 
-		// swap the parent slug for migrating
-		// The post parent slug cannot be saved as a string, so it is
-		// mapped to postmeta and will be deleted upon migration cleanup
+		/**
+		 * Swap the parent slug for migrating
+		 *
+		 * The post parent slug cannot be saved as a string, so it is mapped to postmeta
+		 * and will be deleted upon migration cleanup.
+		 */
 		if ( 0 !== $media->post_parent ) {
 			$parent_slug                      = get_post( $media->post_parent );
 			$parent_slug                      = $parent_slug->post_name;
@@ -175,10 +179,11 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		$meta['_migrated_data']['migrated'] = true;
 		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
 
-		//swap the user id with email for migrating
+		// Swap the user id with email for migrating.
 		$author = get_the_author_meta( 'email', $media->post_author );
 
 		$data = array(
+			'ID'           			=> $media->ID,
 			'post_author'           => $author,
 			'post_date'             => $media->post_date,
 			'post_date_gmt'         => $media->post_date_gmt,
@@ -218,7 +223,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		 * @param object           $media_item Media Item object used to create response.
 		 * @param WP_REST_Request  $request    Request object.
 		 */
-		return apply_filters( 'mmt_rest_api_prepare_media', $response, $media_item, $request );
+		return apply_filters( 'mmt_rest_api_prepare_media', $response, $request );
 	}
 
 	/**
@@ -229,14 +234,31 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	public function migrate_media_posts( $request ) {
 
 		$data          = $request->get_body_params();
+		//$displayMaxSize = ini_get( 'max_input_vars' );
+		//
+		//$p = (int) count($_POST, COUNT_RECURSIVE);
+		//$g = (int) count($_GET, COUNT_RECURSIVE);
+		//$c = (int) count($_COOKIE, COUNT_RECURSIVE);
+		//$input_vars_count = $p + $g + $c;
+
 		$migrate_posts = $data['posts'];
 
 		foreach ( $migrate_posts as $postdata ) {
 
-			// Make sure we the post does not exist already
-			// todo: is it enough to check slug
-			$post_exist = get_page_by_title( $postdata['post_name'], OBJECT, 'attachment' );
-			if ( $post_exist->post_name === $postdata['post_name'] ) {
+			// Store the original guid for error output
+			$maybe_conflict_guid = $postdata['guid'];
+
+			// Swap the url for local import comparison
+			$current_site_url = get_site_url();
+			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+
+			$post_exist = MMT_API::get_post_by_guid( $postdata['guid'], OBJECT, 'attachment' );
+			if ( $post_exist->guid === $postdata['guid'] ) {
+				$data['conflicted'][] = [
+					'ID' => $postdata['ID'],
+					'guid' => $maybe_conflict_guid
+				];
 				continue;
 			}
 
@@ -245,15 +267,13 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			$existing_author         = get_user_by( 'email', $author_email );
 			$postdata['post_author'] = $existing_author->ID;
 
-			// ensure some sort of author is selected
+			// Assign fallback author when one is not found.
 			if ( ! $existing_author ) {
 				$postdata['post_author'] = MMT_API::get_migration_author();
 			}
 
-			// handle url swapping
-			$current_site_url = get_site_url();
-			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
-			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+			// Unset the post id as to not overwrite current posts
+			unset( $postdata['ID'] );
 
 			// make it a post
 			$id = wp_insert_post( $postdata );
@@ -262,15 +282,11 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			if ( ! is_wp_error( $id ) ) {
 				MMT_API::set_postmeta( $postdata['post_meta'], $id );
 
-				//maybe remove from original array
+				// We made it this far, remove the index.
 				unset( $postdata );
 			}
 
-			if ( ! empty( $this->migrated_media_ids ) ) {
-				set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
-			}
-
-			//todo: what do we do with posts that do not get inserted, recursion call?
+			//todo: set conflicted terms to site_option and display on migration tab
 		}
 
 		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
@@ -279,10 +295,15 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			$data['percentage'] = 100;
 		}
 
+		//$data['processedPosts'] = count( $processed );
+		//$data['displayMaxSize'] = $displayMaxSize;
+		//$data['input_vars_count'] = $input_vars_count;
+
 		$data['page']        = absint( $data['page'] ) + 1;
 		$data['total_pages'] = absint( $data['total_pages'] );
 		$data['per_page']    = absint( $data['per_page'] );
 
+		// No need to send the posts with the response.
 		unset( $data['posts'] );
 
 		$response = rest_ensure_response( $data );

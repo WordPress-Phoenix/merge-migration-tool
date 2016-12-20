@@ -135,11 +135,14 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$conflicted_terms  = $this->get_terms_conflicted_collection();
 		$migrateable_terms = $this->get_terms_migratable_collection();
 		$referenced_terms  = $this->get_terms_referenced_collection();
+		$conflicted_terms_count = count( $conflicted_terms );
+		$migrateable_terms_count = count( $migrateable_terms );
+		$referenced_terms_count = count( $referenced_terms );
 		?>
 		<h1><?php esc_attr_e( 'Terms List', 'mmt' ); ?></h1>
 		<form method="post">
 			<?php if ( $migrateable_terms ) { ?>
-				<h3><?php esc_html_e( 'Terms that will be migrated:', 'mmt' ); ?></h3>
+				<h3><?php echo $migrateable_terms_count; ?> <?php esc_html_e( 'Terms that will be migrated:', 'mmt' ); ?></h3>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $migrateable_terms as $migrateable_term ) { ?>
 						<div
@@ -148,7 +151,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				</div>
 			<?php } ?>
 			<?php if ( $referenced_terms ) { ?>
-				<h3><?php esc_html_e( 'Terms that will be referenced:', 'mmt' ); ?></h3>
+				<h3><?php echo $referenced_terms_count; ?> <?php esc_html_e( 'Terms that will be referenced:', 'mmt' ); ?></h3>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $referenced_terms as $referenced_term ) { ?>
 						<div class="mmt-item">
@@ -170,7 +173,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				</div>
 			<?php } ?>
 			<?php if ( $conflicted_terms ) { ?>
-				<h3><?php esc_html_e( 'Terms that have conflicts:', 'mmt' ); ?></h3>
+				<h3><?php echo $conflicted_terms_count; ?> <?php esc_html_e( 'Terms that have conflicts:', 'mmt' ); ?></h3>
 				<p><?php esc_html_e( 'Please copy this list. These terms will not be migrated.', 'mmt' ); ?></p>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $conflicted_terms as $conflicted_term ) { ?>
@@ -234,7 +237,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			<p><?php echo esc_html_e( 'Congragulations! The terms migration is complete.', 'mmt' ); ?></p>
 			<?php if ( $migrated_terms ) { ?>
 				<h3><?php esc_html_e( 'Migrated Terms', 'mmt' ); ?></h3>
-				<p><?php esc_html_e( 'The terms below were migrated to the current site.', 'mmt' ); ?></p>
+				<p><?php echo count($migrated_terms) ?> <?php esc_html_e( 'The terms below were migrated to the current site.', 'mmt' ); ?></p>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $migrated_terms as $migrated_term ) { ?>
 						<div class="mmt-item">
@@ -251,7 +254,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			<?php } ?>
 			<?php if ( $referenced_terms ) { ?>
 				<h3><?php esc_html_e( 'Referenced Terms', 'mmt' ); ?></h3>
-				<p><?php esc_html_e( 'The terms below were referenced to a current term on this site based on a conflict.', 'mmt' ); ?></p>
+				<p><?php echo count($referenced_terms) ?> <?php esc_html_e( 'The terms below were referenced to a current term on this site based on a conflict.', 'mmt' ); ?></p>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $referenced_terms as $referenced_term ) { ?>
 						<div class="mmt-item">
@@ -274,7 +277,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			<?php } ?>
 			<?php if ( $conflicted_terms ) { ?>
 				<h3><?php esc_html_e( 'Conflicted Terms', 'mmt' ); ?></h3>
-				<p><?php esc_html_e( 'The terms below were not transfered to this site based on a conflict.', 'mmt' ); ?></p>
+				<p><?php echo count($conflicted_terms) ?> <?php esc_html_e( 'The terms below were not transfered to this site based on a conflict.', 'mmt' ); ?></p>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $conflicted_terms as $conflicted_term ) { ?>
 						<div class="mmt-item">
