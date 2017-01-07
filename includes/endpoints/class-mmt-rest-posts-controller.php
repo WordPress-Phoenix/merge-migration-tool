@@ -45,7 +45,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
 			),
 		) );
@@ -54,9 +54,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
-				'args'                => array(
-					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
-				),
 			)
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
@@ -77,9 +74,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-
-		//check_ajax_referer( 'mmt_batch_data', 'security');
-
 		$posts_query = new WP_Query(
 			array(
 				'post_type'      => 'post',
@@ -87,44 +81,26 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 				'posts_per_page'  => $request['per_page'],
 			)
 		);
-		$posts = array();
 
-		$posts['total_pages'] = $posts_query->max_num_pages;
-		$posts['page'] = $request['page'];
-		$posts['per_page'] = $request['per_page'];
+		if ( $posts_query->have_posts() ) {
+			$posts = array();
 
-		foreach ( $posts_query->posts as $post ) {
-			$itemdata = $this->prepare_item_for_response( $post, $request );
-			$posts['posts'][]  = $this->prepare_response_for_collection( $itemdata );
+			$posts['total_pages'] = $posts_query->max_num_pages;
+			$posts['page'] = $request['page'];
+			$posts['per_page'] = $request['per_page'];
+
+			foreach ( $posts_query->posts as $post ) {
+				$itemdata = $this->prepare_item_for_response( $post, $request );
+				$posts['posts'][]  = $this->prepare_response_for_collection( $itemdata );
+			}
+
+			// Wrap the media in a response object
+			$response = rest_ensure_response( $posts );
+		} else {
+			return new WP_Error( 'rest_posts_no_posts', __( 'No Media Content.' ), array( 'status' => 404 ) );
 		}
-
-		// Wrap the media in a response object
-		$response = rest_ensure_response( $posts );
 
 		return $response;
-	}
-
-	/**
-	 * Check if a given request has access to read a post
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 *
-	 * @return WP_Error|boolean
-	 */
-	public function get_item_permissions_check( $request ) {
-
-		// add switch to handle case different cases
-
-		$id    = (int) $request['id'];
-		$post  = get_post( $id );
-
-		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_post_invalid_id', __( 'Invalid post id.', 'mmt' ), array( 'status' => 404 ) );
-		}
-
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_single_base );
 	}
 
 	/**
@@ -134,6 +110,8 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 *
+	 * // todo: move this logic into get_items method
+	 *
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_item( $request ) {
@@ -141,7 +119,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		$post = get_post( $id );
 
 		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_user_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_post_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
 		}
 
 		$post     = $this->prepare_item_for_response( $post, $request );
@@ -161,9 +139,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $post, $request ) {
-		$data   = array();
-		$schema = $this->get_item_schema();
-
 		$author = get_the_author_meta( 'email', $post->post_author );
 
 		// grab any post meta
@@ -179,6 +154,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
 
 		$data = array(
+			'ID'                    => $post->ID,
 			'post_author'           => $author,
 			'post_date'             => $post->post_date,
 			'post_date_gmt'         => $post->post_date_gmt,
@@ -224,9 +200,9 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	}
 
 	/**
-	 * Ingest Posts from Remote Site
+	 * @param $request \WP_REST_Request
 	 *
-	 * @since 0.1.1
+	 * @return mixed \WP_REST_Response
 	 */
 	public function migrate_blog_posts( $request ) {
 
@@ -296,7 +272,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 
 			//todo: what do we do with posts that dont get inserted, recursion call?
 		}
-
 
 		$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
 		$data['page'] = absint( $data['page'] ) + 1;

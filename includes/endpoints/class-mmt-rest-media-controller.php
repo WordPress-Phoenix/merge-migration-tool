@@ -45,7 +45,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
 			),
 		) );
@@ -54,11 +54,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
-				//'args'                => array(
-				//	'context' => $this->get_context_param( array( 'default' => 'view' ) ),
-				//),
 			),
-			//'schema' => array( $this, 'get_public_item_schema' ),
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
 			array(
@@ -78,9 +74,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-
-		//check_ajax_referer( 'mmt_batch_data', 'security');
-
 		$media_query = new WP_Query(
 			array(
 				'post_type'      => 'attachment',
@@ -89,16 +82,19 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 				'posts_per_page' => $request['per_page'],
 			)
 		);
+		if ( $media_query->have_posts() ) {
+			$media = array();
 
-		$media = array();
+			$media['total_pages'] = $media_query->max_num_pages;
+			$media['page']        = $request['page'];
+			$media['per_page']    = $request['per_page'];
 
-		$media['total_pages'] = $media_query->max_num_pages;
-		$media['page']        = $request['page'];
-		$media['per_page']    = $request['per_page'];
-
-		foreach ( $media_query->posts as $media_item ) {
-			$itemdata         = $this->prepare_item_for_response( $media_item, $request );
-			$media['posts'][] = $this->prepare_response_for_collection( $itemdata );
+			foreach ( $media_query->posts as $media_item ) {
+				$itemdata         = $this->prepare_item_for_response( $media_item, $request );
+				$media['posts'][] = $this->prepare_response_for_collection( $itemdata );
+			}
+		} else {
+			return new WP_Error( 'rest_post_no_posts', __( 'No Media Content.' ), array( 'status' => 404 ) );
 		}
 
 		// Wrap the media in a response object
@@ -108,40 +104,22 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	}
 
 	/**
-	 * Check if a given request has access to read a post
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 *
-	 * @return WP_Error|boolean
-	 */
-	public function get_item_permissions_check( $request ) {
-		$id   = (int) $request['id'];
-		$post = get_post( $id );
-
-		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_post_invalid_id', __( 'Invalid post id.', 'mmt' ), array( 'status' => 404 ) );
-		}
-
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_single_base );
-	}
-
-	/**
 	 * Get a single post by id
 	 *
 	 * @since 0.1.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 *
+	 * // todo: move this logic into get_items method
+	 *
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_item( $request ) {
 		$id   = (int) $request['id'];
-		$post = get_post( $id );
+		$user = get_userdata( $id );
 
-		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_user_invalid_id', __( 'Invalid media resource id.' ), array( 'status' => 404 ) );
+		if ( empty( $id ) || empty( $user->ID ) ) {
+			return new WP_Error( 'rest_media_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
 		}
 
 		$post     = $this->prepare_item_for_response( $post, $request );
@@ -163,9 +141,12 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	public function prepare_item_for_response( $media, $request ) {
 		$meta = get_post_meta( $media->ID );
 
-		// swap the parent slug for migrating
-		// The post parent slug cannot be saved as a string, so it is
-		// mapped to postmeta and will be deleted upon migration cleanup
+		/**
+		 * Swap the parent slug for migrating
+		 *
+		 * The post parent slug cannot be saved as a string, so it is mapped to postmeta and will
+		 * be deleted upon migration cleanup.
+		 */
 		if ( 0 !== $media->post_parent ) {
 			$parent_slug                      = get_post( $media->post_parent );
 			$parent_slug                      = $parent_slug->post_name;

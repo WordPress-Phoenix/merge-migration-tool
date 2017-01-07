@@ -45,10 +45,9 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
 			),
-			'schema' => array( $this, 'get_public_item_schema' ),
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>[\d]+)', array(
 			array(
@@ -59,7 +58,6 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
 				),
 			),
-			'schema' => array( $this, 'get_public_item_schema' ),
 		) );
 	}
 
@@ -73,7 +71,6 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-
 		// Args for query.
 		$user_args            = array();
 		$user_args['exclude'] = $request['exclude'];
@@ -110,12 +107,16 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 
 		$users_query = new WP_User_Query( $user_args );
 
-		$users = array();
-		foreach ( $users_query->get_results() as $user ) {
-			$data    = $this->prepare_item_for_response( $user, $request );
-			$users[] = $this->prepare_response_for_collection( $data );
+		if ( empty( $users_query->get_results() ) ) {
+			return new WP_Error( 'rest_user_no_data', __( 'No data found.', 'mmt' ), array( 'status' => 404 ) );
+		} else {
+			$users = array();
+			foreach ( $users_query->get_results() as $user ) {
+				$data    = $this->prepare_item_for_response( $user, $request );
+				$users[] = $this->prepare_response_for_collection( $data );
+			}
 		}
-
+		
 		$response = rest_ensure_response( $users );
 
 		// Store pagation values for headers then unset for count query.
@@ -155,32 +156,12 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 	}
 
 	/**
-	 * Check if a given request has access to read a user
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 *
-	 * @return WP_Error|boolean
-	 */
-	public function get_item_permissions_check( $request ) {
-		$id    = (int) $request['id'];
-		$user  = get_userdata( $id );
-		$types = get_post_types( array( 'show_in_rest' => true ), 'names' );
-
-		if ( empty( $id ) || empty( $user->ID ) ) {
-			return new WP_Error( 'rest_user_invalid_id', __( 'Invalid user id.', 'mmt' ), array( 'status' => 404 ) );
-		}
-
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_base );
-	}
-
-	/**
 	 * Get a single user by id
 	 *
 	 * @since 0.1.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
+	 * // todo: move this logic into get_items method
 	 *
 	 * @return WP_Error|WP_REST_Response
 	 */
