@@ -130,9 +130,6 @@ class MMT_API {
 	 */
 	public function __construct() {
 		add_action( 'rest_api_init', array( $this, 'controllers' ) );
-		if ( ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) {
-			add_filter( 'mmt_rest_api_permissions_check', array( $this, 'permissions' ), 10, 3 );
-		}
 	}
 
 	/**
@@ -168,26 +165,6 @@ class MMT_API {
 		require_once MMT_INC . 'endpoints/class-mmt-rest-posts-controller.php';
 		require_once MMT_INC . 'endpoints/class-mmt-rest-terms-controller.php';
 		require_once MMT_INC . 'endpoints/class-mmt-rest-media-controller.php';
-	}
-
-	/**
-	 * Rest API Access Permissions
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param bool            $permission The default permission of the request. Default is true.
-	 * @param WP_REST_Request $request    Full details about the request.
-	 *
-	 * @return WP_Error|boolean
-	 */
-	public function permissions( $permission = true, $request, $rest_base ) {
-		$api_key = ( ! empty( $request['api_key'] ) ) ? esc_attr( $request['api_key'] ) : false;
-
-		if ( ! $api_key || ! self::verify_remote_key( $api_key ) ) {
-			return new WP_Error( 'rest_invalid_api_key', esc_html__( 'Your api key is invalid.', 'mmt' ), array( 'status' => rest_authorization_required_code() ) );
-		}
-
-		return $permission;
 	}
 
 	/**
@@ -438,6 +415,8 @@ class MMT_API {
 	 *
 	 * @param string $key The key to be hashed.
 	 *
+	 * todo: swap this for something more secure
+	 *
 	 * @return string $key
 	 */
 	protected static function hash_key( $key ) {
@@ -483,13 +462,17 @@ class MMT_API {
 		}
 
 		// hash the key for some additional security, not much but....
+		// todo: hash key before compare and before storing in db
 		$remote_key = self::hash_key( $remote_key );
 
 		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
 
-		// Todo: Check for multsite support and handle.
-
-		$url = add_query_arg( 'api_key', $remote_key, $url );
+		$default = array(
+			'headers' => array(
+				'x-mmt-key' => $remote_key
+			)
+		);
+		$args = wp_parse_args( $args, $default );
 
 		$response      = wp_remote_get( esc_url_raw( $url ), $args );
 		$response_code = wp_remote_retrieve_response_code( $response );

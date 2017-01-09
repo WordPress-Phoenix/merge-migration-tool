@@ -507,3 +507,13 @@ if ( ! function_exists( 'wp_is_numeric_array' ) ) {
 		return count( $string_keys ) === 0;
 	}
 }
+
+/**
+ * Debugging functions. Remove for production
+ *
+ * @param $x mixed Key to evaluate
+ */
+function dd( $x ){
+	print_r( $x );
+	die(1);
+}

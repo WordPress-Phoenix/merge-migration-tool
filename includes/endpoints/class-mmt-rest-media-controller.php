@@ -45,7 +45,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
 			),
 		) );
@@ -54,11 +54,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
-				//'args'                => array(
-				//	'context' => $this->get_context_param( array( 'default' => 'view' ) ),
-				//),
 			),
-			//'schema' => array( $this, 'get_public_item_schema' ),
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
 			array(
@@ -78,9 +74,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-
-		//check_ajax_referer( 'mmt_batch_data', 'security');
-
 		$media_query = new WP_Query(
 			array(
 				'post_type'      => 'attachment',
@@ -89,17 +82,19 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 				'posts_per_page' => $request['per_page'],
 			)
 		);
+		if ( $media_query->have_posts() ) {
+			$media = array();
 
-		$media = array();
+			$media['total_pages'] = $media_query->max_num_pages;
+			$media['page']        = $request['page'];
+			$media['per_page']    = $request['per_page'];
 
-		$media['total_posts'] = wp_count_posts('attachment');
-		$media['total_pages'] = $media_query->max_num_pages;
-		$media['page']        = $request['page'];
-		$media['per_page']    = $request['per_page'];
-
-		foreach ( $media_query->posts as $media_item ) {
-			$itemdata         = $this->prepare_item_for_response( $media_item, $request );
-			$media['posts'][] = $this->prepare_response_for_collection( $itemdata );
+			foreach ( $media_query->posts as $media_item ) {
+				$itemdata         = $this->prepare_item_for_response( $media_item, $request );
+				$media['posts'][] = $this->prepare_response_for_collection( $itemdata );
+			}
+		} else {
+			return new WP_Error( 'rest_post_no_posts', __( 'No Media Content.' ), array( 'status' => 404 ) );
 		}
 
 		// Wrap the media in a response object
@@ -109,40 +104,22 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	}
 
 	/**
-	 * Check if a given request has access to read a post
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 *
-	 * @return WP_Error|boolean
-	 */
-	public function get_item_permissions_check( $request ) {
-		$id   = (int) $request['id'];
-		$post = get_post( $id );
-
-		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_post_invalid_id', __( 'Invalid post id.', 'mmt' ), array( 'status' => 404 ) );
-		}
-
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_single_base );
-	}
-
-	/**
 	 * Get a single post by id
 	 *
 	 * @since 0.1.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 *
+	 * // todo: move this logic into get_items method
+	 *
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_item( $request ) {
 		$id   = (int) $request['id'];
-		$post = get_post( $id );
+		$user = get_userdata( $id );
 
-		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_user_invalid_id', __( 'Invalid media resource id.' ), array( 'status' => 404 ) );
+		if ( empty( $id ) || empty( $user->ID ) ) {
+			return new WP_Error( 'rest_media_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
 		}
 
 		$post     = $this->prepare_item_for_response( $post, $request );
@@ -167,8 +144,8 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		/**
 		 * Swap the parent slug for migrating
 		 *
-		 * The post parent slug cannot be saved as a string, so it is mapped to postmeta
-		 * and will be deleted upon migration cleanup.
+		 * The post parent slug cannot be saved as a string, so it is mapped to postmeta and will
+		 * be deleted upon migration cleanup.
 		 */
 		if ( 0 !== $media->post_parent ) {
 			$parent_slug                      = get_post( $media->post_parent );
@@ -179,11 +156,10 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		$meta['_migrated_data']['migrated'] = true;
 		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
 
-		// Swap the user id with email for migrating.
+		//swap the user id with email for migrating
 		$author = get_the_author_meta( 'email', $media->post_author );
 
 		$data = array(
-			'ID'           			=> $media->ID,
 			'post_author'           => $author,
 			'post_date'             => $media->post_date,
 			'post_date_gmt'         => $media->post_date_gmt,
@@ -223,7 +199,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		 * @param object           $media_item Media Item object used to create response.
 		 * @param WP_REST_Request  $request    Request object.
 		 */
-		return apply_filters( 'mmt_rest_api_prepare_media', $response, $request );
+		return apply_filters( 'mmt_rest_api_prepare_media', $response, $media_item, $request );
 	}
 
 	/**
@@ -234,31 +210,14 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	public function migrate_media_posts( $request ) {
 
 		$data          = $request->get_body_params();
-		//$displayMaxSize = ini_get( 'max_input_vars' );
-		//
-		//$p = (int) count($_POST, COUNT_RECURSIVE);
-		//$g = (int) count($_GET, COUNT_RECURSIVE);
-		//$c = (int) count($_COOKIE, COUNT_RECURSIVE);
-		//$input_vars_count = $p + $g + $c;
-
 		$migrate_posts = $data['posts'];
 
 		foreach ( $migrate_posts as $postdata ) {
 
-			// Store the original guid for error output
-			$maybe_conflict_guid = $postdata['guid'];
-
-			// Swap the url for local import comparison
-			$current_site_url = get_site_url();
-			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
-			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
-
-			$post_exist = MMT_API::get_post_by_guid( $postdata['guid'], OBJECT, 'attachment' );
-			if ( $post_exist->guid === $postdata['guid'] ) {
-				$data['conflicted'][] = [
-					'ID' => $postdata['ID'],
-					'guid' => $maybe_conflict_guid
-				];
+			// Make sure we the post does not exist already
+			// todo: is it enough to check slug
+			$post_exist = get_page_by_title( $postdata['post_name'], OBJECT, 'attachment' );
+			if ( $post_exist->post_name === $postdata['post_name'] ) {
 				continue;
 			}
 
@@ -267,13 +226,15 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			$existing_author         = get_user_by( 'email', $author_email );
 			$postdata['post_author'] = $existing_author->ID;
 
-			// Assign fallback author when one is not found.
+			// ensure some sort of author is selected
 			if ( ! $existing_author ) {
 				$postdata['post_author'] = MMT_API::get_migration_author();
 			}
 
-			// Unset the post id as to not overwrite current posts
-			unset( $postdata['ID'] );
+			// handle url swapping
+			$current_site_url = get_site_url();
+			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
 
 			// make it a post
 			$id = wp_insert_post( $postdata );
@@ -282,11 +243,15 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			if ( ! is_wp_error( $id ) ) {
 				MMT_API::set_postmeta( $postdata['post_meta'], $id );
 
-				// We made it this far, remove the index.
+				//maybe remove from original array
 				unset( $postdata );
 			}
 
-			//todo: set conflicted terms to site_option and display on migration tab
+			if ( ! empty( $this->migrated_media_ids ) ) {
+				set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
+			}
+
+			//todo: what do we do with posts that do not get inserted, recursion call?
 		}
 
 		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
@@ -295,15 +260,10 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			$data['percentage'] = 100;
 		}
 
-		//$data['processedPosts'] = count( $processed );
-		//$data['displayMaxSize'] = $displayMaxSize;
-		//$data['input_vars_count'] = $input_vars_count;
-
 		$data['page']        = absint( $data['page'] ) + 1;
 		$data['total_pages'] = absint( $data['total_pages'] );
 		$data['per_page']    = absint( $data['per_page'] );
 
-		// No need to send the posts with the response.
 		unset( $data['posts'] );
 
 		$response = rest_ensure_response( $data );

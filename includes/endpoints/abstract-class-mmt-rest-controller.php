@@ -44,7 +44,7 @@ abstract class MMT_REST_Controller extends WP_REST_Controller {
 	 * @return WP_Error|boolean
 	 */
 	public function get_items_permissions_check( $request ) {
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_base );
+		$this->get_item_permissions_check( $request );
 	}
 
 	/**
@@ -57,7 +57,32 @@ abstract class MMT_REST_Controller extends WP_REST_Controller {
 	 * @return WP_Error|boolean
 	 */
 	public function get_item_permissions_check( $request ) {
-		return apply_filters( 'mmt_rest_api_permissions_check', true, $request, $this->rest_base );
+
+		// todo: fix problem with submitting credentials to begin wizard
+		//if ( ! current_user_can( 'manage_options' ) ) {
+		//	return new WP_Error( 'rest_user_no_access', __( 'Unauthorized. No soup for you!', 'mmt' ), array( 'status' => 401 ) );
+		//}
+
+		// Allow defining the secret key in the config, or setting the site option
+		if ( defined( 'MMT_SECRET_KEY' ) ) {
+			$api_secret = MMT_SECRET_KEY;
+		} else {
+			$api_secret = get_option( 'mmt_key' );
+		}
+
+		// If secret key is not defined, assume failed authentication
+		if ( empty( $api_secret ) ) {
+			return false;
+		}
+
+		$api_key = $request->get_header( 'x-mmt-key' );
+		if ( ! $api_key ) {
+			$api_key = $request->get_param( 'x-mmt-key' );
+		}
+
+		$has_access = (bool) ( $api_secret == $api_key );
+
+		return apply_filters( 'mmt_rest_api_permissions_check', $has_access, $request, $this->rest_base );
 	}
 
 	/**
