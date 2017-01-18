@@ -463,7 +463,7 @@ class MMT_API {
 
 		// hash the key for some additional security, not much but....
 		// todo: hash key before compare and before storing in db
-		$remote_key = self::hash_key( $remote_key );
+		//$remote_key = self::hash_key( $remote_key );
 
 		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
 
