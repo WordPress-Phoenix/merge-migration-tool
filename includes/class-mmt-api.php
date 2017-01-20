@@ -446,6 +446,7 @@ class MMT_API {
 	 *
 	 * @param string $endpoint The api endpoint.
 	 * @param array  $args     Additional request args.
+	 * @param array $params    Additional query string args.
 	 *
 	 * @return bool|array
 	 */
@@ -465,7 +466,10 @@ class MMT_API {
 		// todo: hash key before compare and before storing in db
 		//$remote_key = self::hash_key( $remote_key );
 
-		$url = sprintf( '%s/wp-json/%s/%s?%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint, build_query( $params ) );
+		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
+
+		// Provide a way to send additional query params
+		$url = add_query_arg( $params, $url );
 
 		$default = array(
 			'headers' => array(

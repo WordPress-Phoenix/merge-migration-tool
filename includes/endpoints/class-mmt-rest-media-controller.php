@@ -211,7 +211,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 */
 	public function migrate_media_posts( $request ) {
 
-		//$data = $request->get_body_params();
 		$data = MMT_API::get_data( 'media', array(), $request->get_body_params() );
 
 		foreach ( $data['posts'] as $postdata ) {
@@ -256,7 +255,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 
 		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
 
-		if ( $data['page'] > $data['total_pages'] ) {
+		if ( $data['page'] >= $data['total_pages'] ) {
 			$data['percentage'] = 100;
 		}
 
