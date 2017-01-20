@@ -123,8 +123,8 @@ gulp.task( 'javascript-main', function () {
 		.pipe( uglify() )
 		.pipe( lineec() ) // Consistent Line Endings for non UNIX systems.
         .pipe(stripDebug())
-		.pipe( gulp.dest( paths.jsDest ) )
-		.pipe( notify( { message: 'TASK: Main "javascript" Completed!', onLast: true } ) );
+		.pipe( gulp.dest( paths.jsDest ) );
+		// .pipe( notify( { message: 'TASK: Main "javascript" Completed!', onLast: true } ) );
 } );
 
 // javascript - main
@@ -141,8 +141,8 @@ gulp.task( 'javascript-wizard', function () {
 		.pipe( uglify() )
 		.pipe( lineec() ) // Consistent Line Endings for non UNIX systems.
         .pipe( stripDebug() )
-		.pipe( gulp.dest( paths.jsDest ) )
-		.pipe( notify( { message: 'TASK: Wizard "javascript" Completed!', onLast: true } ) );
+		.pipe( gulp.dest( paths.jsDest ) );
+		// .pipe( notify( { message: 'TASK: Wizard "javascript" Completed!', onLast: true } ) );
 } );
 
 // images

@@ -181,7 +181,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			'post_type'             => $media->post_type,
 			'post_mime_type'        => $media->post_mime_type,
 			'comment_count'         => $media->comment_count,
-			'post_meta'             => $meta
+			'post_meta'             => $meta,
 		);
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
@@ -205,14 +205,16 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	/**
 	 * Ingest Media Posts from Remote Site
 	 *
-	 * @since 0.1.1
+	 * @param WP_REST_Request $request
+	 *
+	 * @return mixed|WP_REST_Response
 	 */
 	public function migrate_media_posts( $request ) {
 
-		$data          = $request->get_body_params();
-		$migrate_posts = $data['posts'];
+		//$data = $request->get_body_params();
+		$data = MMT_API::get_data( 'media', array(), $request->get_body_params() );
 
-		foreach ( $migrate_posts as $postdata ) {
+		foreach ( $data['posts'] as $postdata ) {
 
 			// Make sure we the post does not exist already
 			// todo: is it enough to check slug
@@ -242,8 +244,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			// if no errors add the post meta
 			if ( ! is_wp_error( $id ) ) {
 				MMT_API::set_postmeta( $postdata['post_meta'], $id );
-
-				//maybe remove from original array
 				unset( $postdata );
 			}
 

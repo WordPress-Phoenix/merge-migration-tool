@@ -449,7 +449,7 @@ class MMT_API {
 	 *
 	 * @return bool|array
 	 */
-	public static function get_data( $endpoint, $args = array() ) {
+	public static function get_data( $endpoint, $args = array(), $params = array() ) {
 		if ( empty( $endpoint ) ) {
 			return false;
 		}
@@ -465,12 +465,12 @@ class MMT_API {
 		// todo: hash key before compare and before storing in db
 		//$remote_key = self::hash_key( $remote_key );
 
-		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
+		$url = sprintf( '%s/wp-json/%s/%s?%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint, build_query( $params ) );
 
 		$default = array(
 			'headers' => array(
-				'x-mmt-key' => $remote_key
-			)
+				'X-MMT-KEY' => $remote_key,
+			),
 		);
 		$args = wp_parse_args( $args, $default );
 

@@ -415,27 +415,28 @@ class MMT_Wizard {
 
 		// Javascript
 		wp_register_script( 'mmt-wizard', MMT_JS . "mmt-wizard{$suffix}.js", array( 'jquery' ), MMT_VERSION );
-		// todo: add wpApiSettings nonce
 
-        $data = apply_filters('mmt_js_params', array(
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'apiHomeBase' => esc_url_raw( get_site_url() ) . '/wp-json/mmt/v1/',
-            'apiCallBase' => esc_url_raw( rtrim( MMT_API::get_remote_url(), '/' ) ) . '/wp-json/mmt/v1/',
-            'nonce' => wp_create_nonce( 'mmt_batch_data' ),
-	        'endpoints' => array(
-		        'posts' => array(
-			        'route'  => $_GET['step'],
-			        'method' => 'GET',
-                    'per_page' => ( $_GET['step'] == 'media' ? 100 : 50 )
-		        ),
-		        'batch' => array(
-			        'route'  => $_GET['step'] . '/batch',
-			        'method' => 'POST',
-		        ),
-	        )
-        ));
+		$data = apply_filters( 'mmt_js_params',
+			array(
+				'ajax_url'    => admin_url( 'admin-ajax.php' ),
+				'apiHomeBase' => esc_url_raw( get_site_url() ) . '/wp-json/mmt/v1/',
+				'apiCallBase' => esc_url_raw( rtrim( MMT_API::get_remote_url(), '/' ) ) . '/wp-json/mmt/v1/',
+				'nonce'       => wp_create_nonce( 'mmt_batch_data' ),
+				'endpoints'   => array(
+					'posts' => array(
+						'route'    => $_GET['step'],
+						'method'   => 'GET',
+						'per_page' => ( 'media' == $_GET['step'] ? 100 : 50 ),
+					),
+					'batch' => array(
+						'route'  => $_GET['step'] . '/batch',
+						'method' => 'POST',
+					),
+				),
+			)
+        );
 
-		wp_localize_script( 'mmt-wizard', 'mmtWizardParams', $data);
+		wp_localize_script( 'mmt-wizard', 'mmtWizardParams', $data );
 	}
 
 	/**
@@ -664,6 +665,7 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 *
 	 * @param string $notice The notice slug.
+     * @return string A set query argument.
 	 */
 	public function get_notice_link( $notice = '' ) {
 		if ( empty( $notice ) ) {
