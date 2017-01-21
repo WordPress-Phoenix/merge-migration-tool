@@ -241,7 +241,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			$id = wp_insert_post( $postdata );
 
 			// if no errors add the post meta
-			if ( ! is_wp_error( $id ) ) {
+			if ( ! is_wp_error( $id ) && $id > 0 ) {
 				MMT_API::set_postmeta( $postdata['post_meta'], $id );
 				unset( $postdata );
 			}
@@ -264,7 +264,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		$data['per_page']    = absint( $data['per_page'] );
 
 		unset( $data['posts'] );
-
 		$response = rest_ensure_response( $data );
 
 		return $response;

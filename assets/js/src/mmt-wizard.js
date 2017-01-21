@@ -16,14 +16,9 @@
 
             call.done( function( response ){
                 // console.log( response );
-                button.animate({width: response.percentage + '%'}, 50, "swing");
+                button.animate({width: response.percentage + '%'}, 50, 'linear' );
 
                 // todo: Maybe add conflicted to screen or tab in admin
-                //     if ( data.conflicted ) {
-                //         for (var i = data.conflicted.length - 1; i >= 0; i--) {
-                //             $('.media-migrate-conflicts').append('<li>('+ data.conflicted[i].ID +') - ' + data.conflicted[i].guid + '</li>');
-                //         }
-                //     }
 
                 if (data.page > data.total_pages) {
                     $('.button-migrate-posts')
@@ -50,9 +45,7 @@
             return true;
         },
         init: function () {
-            var self = this,
-                p = mmtWizardParams.endpoints.posts.per_page;
-
+            var self = this;
             $('.button-next').on( 'click', this.pageBlock );
 
             $(document.body).on('click', '.button-migrate-posts', function (e) {
