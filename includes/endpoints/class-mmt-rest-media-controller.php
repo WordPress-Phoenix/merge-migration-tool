@@ -181,7 +181,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			'post_type'             => $media->post_type,
 			'post_mime_type'        => $media->post_mime_type,
 			'comment_count'         => $media->comment_count,
-			'post_meta'             => $meta
+			'post_meta'             => $meta,
 		);
 
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
@@ -205,14 +205,15 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	/**
 	 * Ingest Media Posts from Remote Site
 	 *
-	 * @since 0.1.1
+	 * @param WP_REST_Request $request
+	 *
+	 * @return mixed|WP_REST_Response
 	 */
 	public function migrate_media_posts( $request ) {
 
-		$data          = $request->get_body_params();
-		$migrate_posts = $data['posts'];
+		$data = MMT_API::get_data( 'media', array(), $request->get_body_params() );
 
-		foreach ( $migrate_posts as $postdata ) {
+		foreach ( $data['posts'] as $postdata ) {
 
 			// Make sure we the post does not exist already
 			// todo: is it enough to check slug
@@ -240,10 +241,8 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 			$id = wp_insert_post( $postdata );
 
 			// if no errors add the post meta
-			if ( ! is_wp_error( $id ) ) {
+			if ( ! is_wp_error( $id ) && $id > 0 ) {
 				MMT_API::set_postmeta( $postdata['post_meta'], $id );
-
-				//maybe remove from original array
 				unset( $postdata );
 			}
 
@@ -256,7 +255,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 
 		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
 
-		if ( $data['page'] > $data['total_pages'] ) {
+		if ( $data['page'] >= $data['total_pages'] ) {
 			$data['percentage'] = 100;
 		}
 
@@ -265,7 +264,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		$data['per_page']    = absint( $data['per_page'] );
 
 		unset( $data['posts'] );
-
 		$response = rest_ensure_response( $data );
 
 		return $response;

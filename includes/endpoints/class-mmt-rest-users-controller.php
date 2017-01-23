@@ -103,6 +103,9 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 		 * @param array           $user_args Array of arguments for WP_User_Query.
 		 * @param WP_REST_Request $request   The current request.
 		 */
+
+		// todo: add ascending key e.g. 1-100
+
 		$user_args = apply_filters( 'mmt_rest_api_user_query', $user_args, $request );
 
 		$users_query = new WP_User_Query( $user_args );
@@ -116,10 +119,10 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 				$users[] = $this->prepare_response_for_collection( $data );
 			}
 		}
-		
+
 		$response = rest_ensure_response( $users );
 
-		// Store pagation values for headers then unset for count query.
+		// Store pagination values for headers then unset for count query.
 		$per_page = (int) $user_args['number'];
 		$page     = ceil( ( ( (int) $user_args['offset'] ) / $per_page ) + 1 );
 

@@ -206,15 +206,14 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 */
 	public function migrate_blog_posts( $request ) {
 
-		// Wrap the data in a response object
-		$data = $request->get_body_params();
-		$migrate_posts = $data['posts'];
+		// todo: need to send reverse params
+		$data = MMT_API::get_data( 'posts', array(), $request->get_body_params() );
 
 		// setup url video swapping
 		$current_site_url = get_site_url();
 		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
 
-		foreach ( $migrate_posts as $postdata ) {
+		foreach ( $data['posts'] as $postdata ) {
 
 			// Make sure we the post does not exist already
 			// todo: is it enough to check slug
@@ -222,6 +221,9 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			if ( $post_exist->post_name === $postdata['post_name'] ) {
 				continue;
 			}
+
+			// Get rid of the post id, Ain't nobody got time fo that. Plus it will break stuff
+			unset( $postdata['ID'] );
 
 			// look up and swap the author email with author id
 			$author_email            = $postdata['post_author'];
@@ -243,7 +245,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			$id = wp_insert_post( $postdata );
 
 			// if no errors add the post meta
-			if ( ! is_wp_error( $id ) ) {
+			if ( ! is_wp_error( $id ) && $id > 0 ) {
 
 				// set the taxonomy terms
 				foreach ( $postdata['post_terms'] as $term => $val ) {
@@ -274,13 +276,19 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		}
 
 		$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
+		$data['percentage'] = ceil( $data['percentage'] );
+
+		if ( $data['page'] >= $data['total_pages'] ) {
+			$data['percentage'] = 100;
+		}
+
 		$data['page'] = absint( $data['page'] ) + 1;
 		$data['total_pages'] = absint( $data['total_pages'] );
 		$data['per_page'] = absint( $data['per_page'] );
 
 		unset( $data['posts'] );
-
 		$response = rest_ensure_response( $data );
+
 		return $response;
 	}
 

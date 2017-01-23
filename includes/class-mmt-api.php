@@ -446,10 +446,11 @@ class MMT_API {
 	 *
 	 * @param string $endpoint The api endpoint.
 	 * @param array  $args     Additional request args.
+	 * @param array $params    Additional query string args.
 	 *
 	 * @return bool|array
 	 */
-	public static function get_data( $endpoint, $args = array() ) {
+	public static function get_data( $endpoint, $args = array(), $params = array() ) {
 		if ( empty( $endpoint ) ) {
 			return false;
 		}
@@ -463,14 +464,17 @@ class MMT_API {
 
 		// hash the key for some additional security, not much but....
 		// todo: hash key before compare and before storing in db
-		$remote_key = self::hash_key( $remote_key );
+		//$remote_key = self::hash_key( $remote_key );
 
 		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
 
+		// Provide a way to send additional query params
+		$url = add_query_arg( $params, $url );
+
 		$default = array(
 			'headers' => array(
-				'x-mmt-key' => $remote_key
-			)
+				'X-MMT-KEY' => $remote_key,
+			),
 		);
 		$args = wp_parse_args( $args, $default );
 

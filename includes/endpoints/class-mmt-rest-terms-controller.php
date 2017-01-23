@@ -72,10 +72,11 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 */
 	public function get_items( $request ) {
 		$prepared_args = array(
-			'exclude'    => $request['exclude'],
-			'include'    => $request['include'],
-			'order'      => $request['order'],
-			'orderby'    => $request['orderby'],
+			'exclude' => $request['exclude'],
+			'include' => $request['include'],
+			'order'   => $request['order'],
+			'orderby' => $request['orderby'],
+			'number'  => $request['number'],
 			'hide_empty' => ( isset( $request['hide_empty'] ) ) ? $request['hide_empty'] : false,
 		);
 
@@ -100,15 +101,14 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		// Map data by key for parent relationship lookup on import
 		$this->term_query = $this->create_taxonomy_lookup( $term_query );
 
+		$response['terms'] = $registered_terms;
 
-		$response = array();
-
-		$response['terms'] = get_object_taxonomies( 'post' );
-
+		// Add counts to rest call.
 		foreach ( $registered_terms as $key => $registered_term ) {
 			$response['counts'][ $registered_term ] = wp_count_terms( $registered_term, array( 'hide_empty' => false ) );
 		}
 
+		// Output terms to array
 		foreach ( $term_query as $term ) {
 			$data       = $this->prepare_item_for_response( $term, $request );
 			$response['posts'][] = $this->prepare_response_for_collection( $data );
@@ -184,8 +184,15 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 				'type'              => 'boolean',
 				'validate_callback' => 'rest_validate_request_arg',
 			),
+			'number' => array(
+				'description'       => __( 'Maximum number of items to be returned in result set.', 'mmt' ),
+				'type'              => 'integer',
+				'default'           => 0,
+				'sanitize_callback' => 'absint',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
 		);
-		return apply_filters( 'mmt_rest_api_term_params', array_merge( $custom_query_params, $query_params ) );
+		return apply_filters( 'mmt_rest_api_term_params', array_merge( $query_params, $custom_query_params ) );
 	}
 
 	/**

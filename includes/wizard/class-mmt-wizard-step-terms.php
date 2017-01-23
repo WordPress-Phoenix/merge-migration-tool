@@ -330,9 +330,9 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 	 */
 	public function get_terms() {
 		if ( false === ( $terms = get_transient( 'mmt_terms' ) ) ) {
-
             $endpoint = 'terms?hide_empty=true';
 
+            // User can override whether to migrate empty terms or not
             if ( MMT_API::get_terms_empty_setting() ) {
 	            $endpoint = 'terms';
             }
@@ -377,7 +377,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		}
 
 		// Check for conflicts
-		foreach ( $remote_terms as $remote_term ) {
+		foreach ( $remote_terms['posts'] as $remote_term ) {
 
 			// Search to see if they match
 			$match_slug = array_search( $remote_term['slug'], array_column( $current_site_terms, 'slug' ), true );
