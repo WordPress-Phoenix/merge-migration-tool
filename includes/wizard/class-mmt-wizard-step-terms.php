@@ -330,14 +330,16 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 	 */
 	public function get_terms() {
 		if ( false === ( $terms = get_transient( 'mmt_terms' ) ) ) {
-            $endpoint = 'terms?hide_empty=true';
+			$is_hidden = 1;
 
             // User can override whether to migrate empty terms or not
             if ( MMT_API::get_terms_empty_setting() ) {
-	            $endpoint = 'terms';
+	            $is_hidden = 0;
             }
 
-			$terms = MMT_API::get_data( $endpoint );
+            $terms = MMT_API::get_data( 'terms', [], [ 'hide_empty' => $is_hidden ] );
+            //$terms = MMT_API::get_data( 'terms', [], [ 'hide_empty' => 1, 'taxonomy' => 'category', 'showall' => 0 ] );
+
 			set_transient( 'mmt_terms', $terms, DAY_IN_SECONDS );
 		}
 
@@ -358,6 +360,10 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			$remote_terms = $this->get_terms();
 		}
 
+		if ( ! is_array( $remote_terms ) ) {
+		    return ['data' => 'empty'];
+		}
+
 		// Clear stale data
 		delete_transient( 'mmt_terms_conflicted' );
 		delete_transient( 'mmt_terms_referenced' );
@@ -369,15 +375,21 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$referenced_terms   = array();
 		$migrateable_terms  = array();
 
-		// Get Current Terms
-        $taxonomies = get_object_taxonomies( 'post' );
-		$current_terms_query = get_terms( $taxonomies, array( 'hide_empty' => false ) );
+		if ( ! empty( $remote_terms['terms'] ) ) {
+			return [ 'data' => 'empty' ];
+		}
+
+		/**
+		 * Rather then getting all the terms and parsing a ton of information, we loop through
+		 * only the requested taxonomies.
+		 */
+		$current_terms_query = get_terms( $remote_terms['terms'], array( 'hide_empty' => 0 ) );
 		foreach ( $current_terms_query as $term ) {
 			$current_site_terms[] = array( 'term' => $term, 'slug' => $term->slug );
 		}
 
 		// Check for conflicts
-		foreach ( $remote_terms['posts'] as $remote_term ) {
+		foreach ( $remote_terms['site_terms'] as $remote_term ) {
 
 			// Search to see if they match
 			$match_slug = array_search( $remote_term['slug'], array_column( $current_site_terms, 'slug' ), true );

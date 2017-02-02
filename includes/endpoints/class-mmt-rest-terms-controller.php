@@ -72,13 +72,24 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	 */
 	public function get_items( $request ) {
 		$prepared_args = array(
-			'exclude' => $request['exclude'],
-			'include' => $request['include'],
-			'order'   => $request['order'],
-			'orderby' => $request['orderby'],
-			'number'  => $request['number'],
-			'hide_empty' => ( isset( $request['hide_empty'] ) ) ? $request['hide_empty'] : false,
+			'exclude'    => $request['exclude'],
+			'order'      => $request['order'],
+			'orderby'    => $request['orderby'],
+			'number'     => $request['number'],
+			'hide_empty' => $request['hide_empty'],
+			'taxonomy'   => $request['taxonomy']
 		);
+
+		// Run the requested terms or get them all.
+		$taxonomies = $request['taxonomy'];
+		$taxonomies = array_shift( $taxonomies );
+		$taxonomies = explode(',', $taxonomies );
+
+		if ( true == $request['showall'] ) {
+			$taxonomies = get_object_taxonomies('post');
+		}
+
+		$prepared_args['taxonomy'] = $taxonomies;
 
 		/**
 		 * Filter the query arguments, before passing them to `get_terms()`.
@@ -94,24 +105,24 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		 */
 		$prepared_args = apply_filters( 'mmt_rest_api_terms_query', $prepared_args, $request );
 
-		// TODO: maybe add filters for taxonomies
-		$registered_terms = get_object_taxonomies( 'post' );
-		$term_query = get_terms( $registered_terms, $prepared_args );
+		//$registered_terms = get_object_taxonomies( 'post' );
+		$term_query = get_terms( $prepared_args );
 
 		// Map data by key for parent relationship lookup on import
 		$this->term_query = $this->create_taxonomy_lookup( $term_query );
 
-		$response['terms'] = $registered_terms;
+		$response['terms'] = $taxonomies;
 
 		// Add counts to rest call.
-		foreach ( $registered_terms as $key => $registered_term ) {
-			$response['counts'][ $registered_term ] = wp_count_terms( $registered_term, array( 'hide_empty' => false ) );
+		foreach ( $taxonomies as $key => $taxonomy ) {
+			$count_args = array( 'hide_empty' => $request['hide_empty'] );
+			$response['counts'][ $taxonomy ] = wp_count_terms( $taxonomy, $count_args );
 		}
 
 		// Output terms to array
 		foreach ( $term_query as $term ) {
-			$data       = $this->prepare_item_for_response( $term, $request );
-			$response['posts'][] = $this->prepare_response_for_collection( $data );
+			$data = $this->prepare_item_for_response( $term, $request );
+			$response['site_terms'][] = $this->prepare_response_for_collection( $data );
 		}
 
 		$response = rest_ensure_response( $response );
@@ -177,11 +188,36 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 		$query_params = parent::get_collection_params();
 		$custom_query_params = array(
 			'hide_empty' => array(
-				'default'           => false,
+				'default'           => 0,
 				'description'       => __( 'Hide terms without assignment', 'mmt' ),
-				'enum'              => array( true, false ),
-				'sanitize_callback' => 'sanitize_key',
 				'type'              => 'boolean',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'showall' => array(
+				'default'           => 1,
+				'description'       => __( 'Hide terms without assignment', 'mmt' ),
+				'readonly'          => true,
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'taxonomy' => array(
+				'description'       => __( 'Ascending or descending order for terms', 'mmt' ),
+				'type'              => 'array',
+				'default'           => array('category', 'post_tag'),
+				//'sanitize_callback' => 'sanitize_text_field',
+				//'validate_callback' => 'rest_validate_request_arg',
+			),
+			'order'   => array(
+				'description'       => __( 'Ascending or descending order for terms', 'mmt' ),
+				'type'              => 'string',
+				'default'           => 'ASC',
+				'sanitize_callback' => 'sanitize_text_field',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'orderby' => array(
+				'description'       => __( 'Order terms by ("name", "slug", "term_group", "term_id", "id", "description")', 'mmt' ),
+				'type'              => 'string',
+				'default'           => 'name',
+				'sanitize_callback' => 'sanitize_text_field',
 				'validate_callback' => 'rest_validate_request_arg',
 			),
 			'number' => array(
