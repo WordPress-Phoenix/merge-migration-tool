@@ -308,7 +308,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 	 */
 	public function get_users() {
 		if ( false === ( $users = get_transient( 'mmt_users' ) ) ) {
-			$users = MMT_API::get_data( 'users' );
+			$users = MMT_API::get_data( 'users', [], ['per_page' => 600 ] );
 			set_transient( 'mmt_users', $users, DAY_IN_SECONDS );
 		}
 

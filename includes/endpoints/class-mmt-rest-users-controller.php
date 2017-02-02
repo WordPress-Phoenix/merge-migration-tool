@@ -453,8 +453,17 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 				'type'              => 'array',
 				'sanitize_callback' => 'wp_parse_slug_list',
 			),
+			'per_page' => array(
+				'description'       => __( 'Maximum number of items to be returned in result set.' ),
+				'type'              => 'integer',
+				'default'           => 600,
+				'minimum'           => 1,
+				'maximum'           => 600,
+				'sanitize_callback' => 'absint',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
 		);
 
-		return apply_filters( 'mmt_rest_api_user_params', array_merge( $user_query_params, $query_params ) );
+		return apply_filters( 'mmt_rest_api_user_params', array_merge( $query_params, $user_query_params ) );
 	}
 }
