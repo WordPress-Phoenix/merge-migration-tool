@@ -338,7 +338,6 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
             }
 
             $terms = MMT_API::get_data( 'terms', [], [ 'hide_empty' => $is_hidden ] );
-            //$terms = MMT_API::get_data( 'terms', [], [ 'hide_empty' => 1, 'taxonomy' => 'category', 'showall' => 0 ] );
 
 			set_transient( 'mmt_terms', $terms, DAY_IN_SECONDS );
 		}
@@ -375,7 +374,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$referenced_terms   = array();
 		$migrateable_terms  = array();
 
-		if ( ! empty( $remote_terms['terms'] ) ) {
+		if ( empty( $remote_terms['terms'] ) ) {
 			return [ 'data' => 'empty' ];
 		}
 

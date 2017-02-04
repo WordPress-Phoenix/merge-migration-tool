@@ -49,13 +49,13 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 				'args'                => $this->get_collection_params(),
 			),
 		) );
-		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>[\d]+)', array(
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_item' ),
-				'permission_callback' => array( $this, 'get_item_permissions_check' ),
-			),
-		) );
+		//register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>[\d]+)', array(
+		//	array(
+		//		'methods'             => WP_REST_Server::READABLE,
+		//		'callback'            => array( $this, 'get_item' ),
+		//		'permission_callback' => array( $this, 'get_item_permissions_check' ),
+		//	),
+		//) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
 			array(
 				'methods'  => WP_REST_Server::CREATABLE,
@@ -114,19 +114,19 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 *
 	 * @return WP_Error|WP_REST_Response
 	 */
-	public function get_item( $request ) {
-		$id   = (int) $request['id'];
-		$user = get_userdata( $id );
-
-		if ( empty( $id ) || empty( $user->ID ) ) {
-			return new WP_Error( 'rest_media_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
-		}
-
-		$post     = $this->prepare_item_for_response( $post, $request );
-		$response = rest_ensure_response( $post );
-
-		return apply_filters( 'mmt_rest_api_post_item_response', $response );
-	}
+	//public function get_item( $request ) {
+	//	$id   = (int) $request['id'];
+	//	$user = get_userdata( $id );
+	//
+	//	if ( empty( $id ) || empty( $user->ID ) ) {
+	//		return new WP_Error( 'rest_media_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
+	//	}
+	//
+	//	$post     = $this->prepare_item_for_response( $post, $request );
+	//	$response = rest_ensure_response( $post );
+	//
+	//	return apply_filters( 'mmt_rest_api_post_item_response', $response );
+	//}
 
 	/**
 	 * Prepare the item for the REST response
@@ -149,8 +149,10 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		 */
 		if ( 0 !== $media->post_parent ) {
 			$parent_slug                      = get_post( $media->post_parent );
-			$parent_slug                      = $parent_slug->post_name;
-			$meta['_migrated_data']['parent'] = $parent_slug;
+			if ( $parent_slug ) {
+				$parent_slug                      = $parent_slug->post_name;
+				$meta['_migrated_data']['parent'] = $parent_slug;
+			}
 		}
 
 		$meta['_migrated_data']['migrated'] = true;
@@ -199,7 +201,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		 * @param object           $media_item Media Item object used to create response.
 		 * @param WP_REST_Request  $request    Request object.
 		 */
-		return apply_filters( 'mmt_rest_api_prepare_media', $response, $media_item, $request );
+		return apply_filters( 'mmt_rest_api_prepare_media', $response, $data, $request );
 	}
 
 	/**
@@ -211,46 +213,49 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 */
 	public function migrate_media_posts( $request ) {
 
-		$data = MMT_API::get_data( 'media', array(), $request->get_body_params() );
+		$data = MMT_API::get_data( 'media', [ 'timeout' => 40 ], $request->get_body_params() );
 
-		foreach ( $data['posts'] as $postdata ) {
+		// Setup var to not tax the server looping through each time
+		$current_site_url = get_site_url();
+		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+		$fallback_migration_author = MMT_API::get_migration_author();
 
-			// Make sure we the post does not exist already
-			// todo: is it enough to check slug
-			$post_exist = get_page_by_title( $postdata['post_name'], OBJECT, 'attachment' );
-			if ( $post_exist->post_name === $postdata['post_name'] ) {
-				continue;
+		if ( $data['posts'] ) {
+			foreach ( $data['posts'] as &$postdata ) {
+
+				// Make sure we the post does not exist already
+				$post_exist = MMT_API::get_post_by_post_name( $postdata['post_name'], OBJECT, 'attachment' );
+				if ( $post_exist !== null && ( $post_exist->post_name == $postdata['post_name'] ) ) {
+					continue;
+				}
+
+				// look up and swap the author email with author id
+				$author_email            = $postdata['post_author'];
+				$existing_author         = get_user_by( 'email', $author_email );
+
+				$postdata['post_author'] = $fallback_migration_author;
+
+				// ensure some sort of author is selected
+				if ( $existing_author ) {
+					$postdata['post_author'] = $existing_author->ID;
+				}
+
+				// handle url swapping
+				$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
+
+				// make it a post
+				$id = wp_insert_post( $postdata );
+
+				// if no errors add the post meta
+				if ( ! is_wp_error( $id ) && $id > 0 ) {
+					MMT_API::set_postmeta( $postdata['post_meta'], $id );
+
+					// Setting to null forces garbage collection
+					$postdata = null;
+					unset( $postdata );
+				}
+
 			}
-
-			// look up and swap the author email with author id
-			$author_email            = $postdata['post_author'];
-			$existing_author         = get_user_by( 'email', $author_email );
-			$postdata['post_author'] = $existing_author->ID;
-
-			// ensure some sort of author is selected
-			if ( ! $existing_author ) {
-				$postdata['post_author'] = MMT_API::get_migration_author();
-			}
-
-			// handle url swapping
-			$current_site_url = get_site_url();
-			$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
-			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
-
-			// make it a post
-			$id = wp_insert_post( $postdata );
-
-			// if no errors add the post meta
-			if ( ! is_wp_error( $id ) && $id > 0 ) {
-				MMT_API::set_postmeta( $postdata['post_meta'], $id );
-				unset( $postdata );
-			}
-
-			if ( ! empty( $this->migrated_media_ids ) ) {
-				set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
-			}
-
-			//todo: what do we do with posts that do not get inserted, recursion call?
 		}
 
 		$data['percentage']  = ( $data['page'] / $data['total_pages'] ) * 100;
@@ -263,7 +268,11 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 		$data['total_pages'] = absint( $data['total_pages'] );
 		$data['per_page']    = absint( $data['per_page'] );
 
-		unset( $data['posts'] );
+		// Setting to null forces garbage collection
+		$data['posts'] = null;
+
+		sleep( 2 );
+
 		$response = rest_ensure_response( $data );
 
 		return $response;

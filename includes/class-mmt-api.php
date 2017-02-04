@@ -475,6 +475,7 @@ class MMT_API {
 			'headers' => array(
 				'X-MMT-KEY' => $remote_key,
 			),
+			'wp-rest-cache' => 'exclude'
 		);
 		$args = wp_parse_args( $args, $default );
 
@@ -551,42 +552,38 @@ class MMT_API {
 	}
 
 	/**
-	 * Retrieve post by querying guid
+	 * Retrieve a post given its post_name.
 	 *
-	 * @param        $guid
-	 * @param string $output
-	 * @param string $post_type
+	 * Uses post name to check existence before importing.
 	 *
-	 * @return array|null|WP_Post
+	 * @see WordPress - get_page_by_title()
+	 *
+	 * @since 1.0.0
+	 *
+	 * @global wpdb        $wpdb       WordPress database abstraction object.
+	 *
+	 * @param string       $post_name  Page title
+	 * @param string       $output     Optional. The required return type. One of OBJECT, ARRAY_A, or ARRAY_N, which correspond to
+	 *                                 a WP_Post object, an associative array, or a numeric array, respectively. Default OBJECT.
+	 * @param string|array $post_type  Optional. Post type or array of post types. Default 'page'.
+	 *
+	 * @return WP_Post|array|null WP_Post (or array) on success, or null on failure.
 	 */
-	public static function get_post_by_guid( $guid, $output = OBJECT, $post_type = 'post' ) {
+	public static function get_post_by_post_name( $post_name, $output = OBJECT, $post_type = 'post' ) {
 		global $wpdb;
 
-		if ( is_array( $post_type ) ) {
-			$post_type           = esc_sql( $post_type );
-			$post_type_in_string = "'" . implode( "','", $post_type ) . "'";
-			$sql                 = $wpdb->prepare( "
+		$sql = $wpdb->prepare( "
 			SELECT ID
 			FROM $wpdb->posts
-			WHERE guid = %s
-			AND post_type IN ($post_type_in_string)
-		", $guid );
-		} else {
-			$sql = $wpdb->prepare( "
-			SELECT ID
-			FROM $wpdb->posts
-			WHERE guid = %s
+			WHERE post_name = %s
 			AND post_type = %s
-		", $guid, $post_type );
-		}
+		", $post_name, $post_type );
 
 		$post = $wpdb->get_var( $sql );
 
 		if ( $post ) {
 			return get_post( $post, $output );
 		}
-
-		return false;
 	}
 
 }

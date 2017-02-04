@@ -117,7 +117,10 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 		delete_transient( 'mmt_media_ids_migrated' );
 		?>
 		<form method="post">
-			<h3><?php //echo count( $media_posts ); ?><?php esc_html_e( 'Media Posts will be migrated:', 'mmt' ); ?></h3>
+			<h3><?php esc_html_e( 'Media Posts will be migrated:', 'mmt' ); ?></h3>
+            <div>
+                <p>Page: <span class="page-num"></span> of <span class="page-total"></span></p>
+            </div>
             <div class="posts-batch"
                  style="width: 100%; height: 10px; margin-bottom: 30px; background-color: rgb(234,234,234);">
                 <span class="posts-batch-progress"
@@ -126,7 +129,7 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 			<p class="mmt-actions step">
 				<input type="submit" class="button-primary button button-large button-migrate-posts"
 				       value="<?php esc_attr_e( 'Migrate Media', 'mmt' ); ?>" name="save_sub_step"/>
-				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>"
+				<a href="<?php echo esc_url( $this->wizard->get_prev_step_link() ); ?>" id="button-back"
 				   class="button button-large button-next"><?php esc_attr_e( 'Back', 'mmt' ); ?></a>
 				<?php $this->wizard->security_field(); ?>
 			</p>

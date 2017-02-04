@@ -632,26 +632,30 @@
         },
         getPosts: function (base, endpoint, data) {
             var self = this,
-                call = this.sendData(base, endpoint, data, self),
-                button = $('.posts-batch-progress');
+                call = this.sendData(base, endpoint, data),
+                progress = $('.posts-batch-progress');
 
             call.done( function( response ){
-                // console.log( response );
-                button.animate({width: response.percentage + '%'}, 50, 'linear' );
-
                 // todo: Maybe add conflicted to screen or tab in admin
 
-                if (data.page > data.total_pages) {
+                if (response.page > response.total_pages) {
                     $('.button-migrate-posts')
                         .val('Continue')
                         .removeClass('button-migrate-posts')
                         .addClass('button-next');
+
+                    $('.mmt-actions .button').prop("disabled", true);
+
                 } else {
+
+                    $('.page-num').html(response.page);
+                    $('.page-total').html(response.total_pages);
+
                     // call more data if available. Yay recursion!
                     self.getPosts(mmtWizardParams.apiHomeBase, mmtWizardParams.endpoints.batch, response);
                 }
 
-                button.animate({width: data.percentage + '%'}, 50, "swing");
+                progress.animate({width: response.percentage + '%'}, 50 );
             });
 
         },
@@ -671,8 +675,16 @@
 
             $(document.body).on('click', '.button-migrate-posts', function (e) {
                 e.preventDefault();
-                console.log(mmtWizardParams );
-                self.getPosts( mmtWizardParams.apiHomeBase, mmtWizardParams.endpoints.batch, { per_page: 1, page: 1 } );
+
+                $('.mmt-actions .button').prop( "disabled", true );
+                $('.button-migrate-posts')
+                    .prop("disabled", true)
+                    .val('Migrating');
+
+                var base = mmtWizardParams.apiHomeBase,
+                    batch = mmtWizardParams.endpoints.batch,
+                    perPage = mmtWizardParams.endpoints.batch.per_page;
+                self.getPosts( base, batch, { per_page: perPage, page: 1 } );
             });
         }
     };

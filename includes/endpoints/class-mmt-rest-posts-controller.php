@@ -115,7 +115,8 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_item( $request ) {
-		$id   = (int) $request['id'];
+		// todo: fix this
+		$id   = $request['id'];
 		$post = get_post( $id );
 
 		if ( empty( $id ) || empty( $post->ID ) ) {
@@ -144,6 +145,12 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		// grab any post meta
 		$meta = get_post_meta( $post->ID );
 
+		// unset old post
+		unset( $meta['single_trending_stories'] );
+		unset( $meta['single_atw_stories'] );
+		unset( $meta['single_trending_storiesb'] );
+		unset( $meta['fsv5_related_stories'] ); // maybe
+
 		if ( isset( $meta['_thumbnail_id'] ) ) {
 			$image_id = $meta['_thumbnail_id'][0];
 			$featured_image = get_post( $image_id );
@@ -151,7 +158,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		}
 
 		$meta['_migrated_data']['migrated'] = true;
-		$meta['_migrated_data']             = maybe_serialize( $meta['_migrated_data'] );
+		$meta['_migrated_data'] = maybe_serialize( $meta['_migrated_data'] );
 
 		$data = array(
 			'ID'                    => $post->ID,
@@ -206,88 +213,95 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 */
 	public function migrate_blog_posts( $request ) {
 
+		add_filter( 'xmlrpc_enabled', '__return_false' );
+
 		// todo: need to send reverse params
-		$data = MMT_API::get_data( 'posts', array(), $request->get_body_params() );
+		$data = MMT_API::get_data( 'posts', ['timeout' => 40 ], $request->get_body_params() );
 
 		// setup url video swapping
 		$current_site_url = get_site_url();
 		$migrate_site_url = rtrim( MMT_API::get_remote_url(), '/' );
+		$fallback_migration_author = MMT_API::get_migration_author();
 
-		foreach ( $data['posts'] as $postdata ) {
+		if ( $data['posts'] ) {
 
-			// Make sure we the post does not exist already
-			// todo: is it enough to check slug
-			$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
-			if ( $post_exist->post_name === $postdata['post_name'] ) {
-				continue;
-			}
+			foreach ( $data['posts'] as &$postdata ) {
 
-			// Get rid of the post id, Ain't nobody got time fo that. Plus it will break stuff
-			unset( $postdata['ID'] );
-
-			// look up and swap the author email with author id
-			$author_email            = $postdata['post_author'];
-			$existing_author         = get_user_by( 'email', $author_email );
-			$postdata['post_author'] = $existing_author->ID;
-
-			// highly unlikely, but just in case
-			if ( ! $existing_author ) {
-				$postdata['post_author'] = MMT_API::get_migration_author();
-			}
-
-			// swap url in guid
-			$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
-
-			// swap url in content
-			$postdata['post_content'] = str_replace( $migrate_site_url, $current_site_url, $postdata['post_content'] );
-
-			// make it a post
-			$id = wp_insert_post( $postdata );
-
-			// if no errors add the post meta
-			if ( ! is_wp_error( $id ) && $id > 0 ) {
-
-				// set the taxonomy terms
-				foreach ( $postdata['post_terms'] as $term => $val ) {
-					wp_set_object_terms( $id, $val, $term );
+				// Make sure we the post does not exist already
+				$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
+				if ( $post_exist !== null && ( $post_exist->post_name == $postdata['post_name'] ) ) {
+					continue;
 				}
 
-				// set the featured image if there is one
-				if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
-					$migrate_title                          = $postdata['post_meta']['_thumbnail_id'][0];
-					$attachment_post                        = get_page_by_title( $migrate_title, OBJECT, 'attachment' );
-					$postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
+				// Get rid of the post id, Ain't nobody got time fo that. Plus it will break stuff
+				unset( $postdata['ID'] );
+
+				// look up and swap the author email with author id
+				$author_email            = $postdata['post_author'];
+				$existing_author         = get_user_by( 'email', $author_email );
+
+				$postdata['post_author'] = $fallback_migration_author;
+				if ( $existing_author ) {
+					$postdata['post_author'] = $existing_author->ID;
 				}
 
-				MMT_API::set_postmeta( $postdata['post_meta'], $id );
+				// swap url in guid
+				$postdata['guid'] = str_replace( $migrate_site_url, $current_site_url, $postdata['guid'] );
 
-				// Track IDs for confirmation on the final media page
-				//$this->migrated_media_ids[] = $id;
+				// swap url in content
+				$postdata['post_content'] = str_replace( $migrate_site_url, $current_site_url, $postdata['post_content'] );
 
-				//maybe remove from original array
-				unset( $postdata );
+				// make it a post
+				$id = wp_insert_post( $postdata );
+
+				// if no errors add the post meta
+				if ( ! is_wp_error( $id ) && $id > 0 ) {
+
+					// set the taxonomy terms
+					foreach ( $postdata['post_terms'] as $term => $val ) {
+						wp_set_object_terms( $id, $val, $term );
+					}
+
+					// set the featured image if there is one
+					if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
+						$migrate_title = $postdata['post_meta']['_thumbnail_id'][0];
+						//$attachment_post = get_page_by_title( $migrate_title, OBJECT, 'attachment' );
+						$attachment_post = MMT_API::get_post_by_post_name( $migrate_title, OBJECT, 'attachment' );
+
+						if ( $attachment_post ) {
+							$postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
+						}
+					}
+
+					MMT_API::set_postmeta( $postdata['post_meta'], $id );
+
+					//maybe remove from original array
+					$postdata = null;
+				}
 			}
-			//
-			//if ( ! empty( $this->migrated_media_ids ) ) {
-			//	set_transient( 'mmt_media_ids_migrated', $this->migrated_media_ids, DAY_IN_SECONDS );
-			//}
 
-			//todo: what do we do with posts that dont get inserted, recursion call?
+			$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
+			$data['percentage'] = ceil( $data['percentage'] );
+
+			if ( $data['page'] >= $data['total_pages'] ) {
+				$data['percentage'] = 100;
+			}
+
+			$data['page']        = absint( $data['page'] ) + 1;
+			$data['total_pages'] = absint( $data['total_pages'] );
+			$data['per_page']    = absint( $data['per_page'] );
+
+		} else {
+			$data['total_pages'] = 'bailed';
 		}
 
-		$data['percentage'] = ( $data['page'] / $data['total_pages'] ) * 100;
-		$data['percentage'] = ceil( $data['percentage'] );
-
-		if ( $data['page'] >= $data['total_pages'] ) {
-			$data['percentage'] = 100;
-		}
-
-		$data['page'] = absint( $data['page'] ) + 1;
-		$data['total_pages'] = absint( $data['total_pages'] );
-		$data['per_page'] = absint( $data['per_page'] );
-
+		// Setting to null forces garbage collection
+		$data['posts'] = null;
 		unset( $data['posts'] );
+
 		$response = rest_ensure_response( $data );
+
+		sleep( 1 );
 
 		return $response;
 	}
@@ -323,7 +337,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return array
 	 */
 	public function get_post_term_data( $post_id ) {
-		//todo: test with custom taxonomies
 		// get register taxonomies
 		$taxonomies = get_taxonomies( array( 'public' => 'true'), 'names' );
 
