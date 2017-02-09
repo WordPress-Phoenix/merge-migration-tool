@@ -339,8 +339,9 @@ class MMT_API {
 	public static function get_migration_types() {
 		$types = apply_filters( 'mmt_migration_types', array(
 			'multisite-site-within-site'          => 'Site to site within multisite',
-			'multisite-site-to-category'          => 'Site to category within multisite',
-			'multisite-site-from-other-multisite' => 'Site from one Multisite to another',
+			// todo: to be added in a future release
+			//'multisite-site-to-category'          => 'Site to category within multisite',
+			//'multisite-site-from-other-multisite' => 'Site from one Multisite to another',
 		) );
 
 		$options = '';
