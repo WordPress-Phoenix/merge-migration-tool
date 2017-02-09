@@ -119,7 +119,7 @@ class MMT_Wizard_Step_Media extends MMT_Wizard_Step {
 		<form method="post">
 			<h3><?php esc_html_e( 'Media Posts will be migrated:', 'mmt' ); ?></h3>
             <div>
-                <p>Page: <span class="page-num"></span> of <span class="page-total"></span></p>
+                <p>Page: <span class="page-num">1</span><span class="page-total"></span></p>
             </div>
             <div class="posts-batch"
                  style="width: 100%; height: 10px; margin-bottom: 30px; background-color: rgb(234,234,234);">

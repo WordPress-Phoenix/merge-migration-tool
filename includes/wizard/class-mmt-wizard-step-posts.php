@@ -116,7 +116,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
         <form method="post">
             <h3><?php esc_html_e( 'Posts will be migrated:', 'mmt' ); ?></h3>
             <div>
-                <p>Page: <span class="page-num"></span> of <span class="page-total"></span></p>
+                <p>Page: <span class="page-num"></span><span class="page-total"></span></p>
             </div>
             <div class="posts-batch" style="width: 100%; height: 10px; margin-bottom: 30px; background-color: rgb(234,234,234);">
                 <span class="posts-batch-progress" style="display: block; width: 0; height: 100%; background: linear-gradient(to right, rgb(31,202,0) 0%, rgba(31,234,0,1) 100%);"></span>

@@ -636,7 +636,9 @@
                 progress = $('.posts-batch-progress');
 
             call.done( function( response ){
-                // todo: Maybe add conflicted to screen or tab in admin
+
+                $('.page-num').html(response.page);
+                $('.page-total').html(' of ' +response.total_pages);
 
                 if (response.page > response.total_pages) {
                     $('.button-migrate-posts')
@@ -644,12 +646,9 @@
                         .removeClass('button-migrate-posts')
                         .addClass('button-next');
 
-                    $('.mmt-actions .button').prop("disabled", true);
+                    $('.mmt-actions .button').prop("disabled", false);
 
                 } else {
-
-                    $('.page-num').html(response.page);
-                    $('.page-total').html(response.total_pages);
 
                     // call more data if available. Yay recursion!
                     self.getPosts(mmtWizardParams.apiHomeBase, mmtWizardParams.endpoints.batch, response);
