@@ -157,7 +157,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 						<div class="mmt-item">
 							<?php
 							printf(
-								'%s: %s (%s) <br /> %s: %s (%s) <br /> %s: %s <br /><br />',
+								'%s: %s (%s) <br /> %s: %s (%s) <br /> %s: %s <br /> %s: %s <br /><br />',
 								esc_attr__( 'Remote', 'mmt' ),
 								esc_attr( $referenced_term['term']['name'] ),
 								esc_attr( $referenced_term['term']['slug'] ),
@@ -165,7 +165,9 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 								esc_attr( $referenced_term['current_term']->name ),
 								esc_attr( $referenced_term['current_term']->slug ),
 								esc_attr__( 'Conflict', 'mmt' ),
-								esc_attr( $referenced_term['conflict'] )
+								esc_attr( $referenced_term['conflict'] ),
+								esc_attr__( 'Type', 'mmt' ),
+								esc_attr( $referenced_term['current_term']->taxonomy )
 							);
 							?>
 						</div>
@@ -180,7 +182,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 						<div class="mmt-item">
 							<?php
 							printf(
-								'%s: %s (%s) <br /> %s: %s (%s) <br /><br /> %s: %s',
+								'%s: %s (%s) <br /> %s: %s (%s) <br /> %s: %s <br /> %s: %s <br /><br />',
 								esc_attr__( 'Local', 'mmt' ),
 								esc_attr( $conflicted_term['current_term']->name ),
 								esc_attr( $conflicted_term['current_term']->slug ),
@@ -188,7 +190,9 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 								esc_attr( $conflicted_term['term']['name'] ),
 								esc_attr( $conflicted_term['term']['slug'] ),
 								esc_attr__( 'Conflict', 'mmt' ),
-								esc_attr( $conflicted_term['conflict'] )
+								esc_attr( $conflicted_term['conflict'] ),
+								esc_attr__( 'Type', 'mmt' ),
+								esc_attr( $conflicted_term['current_term']->taxonomy )
 							);
 							?>
 						</div>
