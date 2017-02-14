@@ -28,8 +28,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 	public $name = 'posts';
 
 	/**
-	 * Container for migrated media post ids on final
-	 * media migration screen
+	 * Container for migrated post ids on final post migration screen
 	 *
 	 * @var array
 	 */
@@ -73,13 +72,13 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 		?>
 		<h1><?php esc_attr_e( 'Posts Migration', 'mmt' ); ?></h1>
 		<form method="post">
-            <p><?php esc_html_e( 'During the next few steps, this tool will migrate all media from the following site:', 'mmt' ); ?></p>
+            <p><?php esc_html_e( 'During the next few steps, this tool will migrate all posts from the following site:', 'mmt' ); ?></p>
             <p><?php printf( '<a href="%s" target="_blank">%s</a>', esc_url( $url ), esc_url( $url ) ); ?></p>
 
             <div>
                 <strong>Fallback Author</strong>
                 <p>
-                    Set a fallback author to assign media posts where the author may not exist. <br>
+                    Set a fallback author to assign posts where the author may not exist. <br>
                     <select name="<?php echo esc_attr( $migration_author_input_name ); ?>"
                             id="<?php echo esc_attr( $migration_author_input_name ); ?>">
 						<?php echo $migration_authors; ?>
@@ -129,7 +128,7 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 				<?php $this->wizard->security_field(); ?>
             </p>
             <div>
-				<ul class="media-migrate-conflicts"></ul>
+				<ul class="post-migrate-conflicts"></ul>
 			</div>
         </form>
 		<?php
@@ -141,12 +140,13 @@ class MMT_Wizard_Step_Posts extends MMT_Wizard_Step {
 		exit;
 	}
 
+
 	public function posts_complete() {
 		?>
-        <h1><?php esc_attr_e( 'Media Migration Complete!', 'mmt' ); ?></h1>
+        <h1><?php esc_attr_e( 'Post Migration Complete!', 'mmt' ); ?></h1>
         <form method="post">
-            <h3><?php esc_html_e( 'Migrated Media', 'mmt' ); ?></h3>
-            <p><?php echo '10' ?><?php esc_html_e( 'media posts were migrated to the current site.', 'mmt' ); ?></p>
+            <h3><?php esc_html_e( 'Migrated Posts', 'mmt' ); ?></h3>
+            <p><?php echo '10' ?><?php esc_html_e( 'posts were migrated to the current site.', 'mmt' ); ?></p>
             <div class="mmt-items-list-overflow">
                 <div class="mmt-item"></div>
             </div>
