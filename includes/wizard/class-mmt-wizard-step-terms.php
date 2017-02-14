@@ -146,7 +146,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $migrateable_terms as $migrateable_term ) { ?>
 						<div
-							class="mmt-item"><?php printf( '%s (%s)', esc_attr( $migrateable_term['name'] ), esc_attr( $migrateable_term['slug'] ) ); ?></div>
+							class="mmt-item"><?php printf( '%s (%s) - (%s)', esc_attr( $migrateable_term['name'] ), esc_attr( $migrateable_term['slug'] ), esc_attr( $migrateable_term['taxonomy'] ) ); ?></div>
 					<?php } ?>
 				</div>
 			<?php } ?>
@@ -220,7 +220,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		$this->wizard->verify_security_field();
 
 		$this->migrate_terms();
-		$this->migrate_referenced_terms();
+		//$this->migrate_referenced_terms();
 
 		wp_safe_redirect( esc_url_raw( $this->wizard->get_next_step_link() ) );
 		exit;
@@ -387,21 +387,24 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 		 * only the requested taxonomies.
 		 */
 		$current_terms_query = get_terms( $remote_terms['terms'], array( 'hide_empty' => 0 ) );
+
+		/**
+		 * Create a lookup table in place of more database calls
+		 */
 		foreach ( $current_terms_query as $term ) {
-			$current_site_terms[] = array( 'term' => $term, 'slug' => $term->slug );
+			$current_site_terms[ $term->slug ] = $term;
 		}
 
 		// Check for conflicts
 		foreach ( $remote_terms['site_terms'] as $remote_term ) {
 
-			// Search to see if they match
-			$match_slug = array_search( $remote_term['slug'], array_column( $current_site_terms, 'slug' ), true );
+		    $local_term = $current_site_terms[ $remote_term['slug'] ];
 
-			// Both Conflict
-			if ( false !== $match_slug && taxonomy_exists( $remote_term['taxonomy'] ) ) {
+			// Skip import of term if it exists within the same category
+			if ( ! is_null( $local_term ) && ( $local_term->taxonomy == $remote_term['taxonomy'] ) ) {
 				$referenced_terms[] = array(
 					'term'         => $remote_term,
-					'current_term' => $current_site_terms[ $match_slug ]['term'],
+					'current_term' => $local_term,
 					'conflict'     => 'term_slug',
 				);
 				continue;
@@ -485,14 +488,12 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			$terms = $this->get_terms_migratable_collection();
 		}
 
-		// Get the last key for comparison
-		end( $terms );
-		$last = key( $terms );
+		// Bring terms without parents to the front the line
+		usort( $terms, function ( $a, $b ) {
+			return $a['parent'] - $b['parent'];
+		} );
 
-		// Make sure to start back at the beginning
-		reset( $terms );
-
-		foreach ( $terms as $key => $term ) {
+		foreach ( $terms as $key => &$term ) {
 			$term_name     = $term['name'];
 			$term_taxonomy = $term['taxonomy'];
 			$terms_args    = array(
@@ -536,17 +537,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 				'slug'    => $term['slug'],
 			];
 
-			// Remove term from reference array after successful import
-			if ( is_array( $term_array ) ) {
-				unset( $terms[ $key ] );
-			}
-
-			// Recursion! This makes hierarchical relationship building work on import
-			if ( $key == $last && count( $terms ) > 0 ) {
-				reset( $terms );
-				$this->migrate_terms( $terms );
-			}
-
+            unset( $terms[ $key ] );
 		}
 
 		if ( ! empty( $this->migrated_terms ) ) {
