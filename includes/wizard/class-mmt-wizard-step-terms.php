@@ -241,7 +241,7 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 			<p><?php echo esc_html_e( 'Congragulations! The terms migration is complete.', 'mmt' ); ?></p>
 			<?php if ( $migrated_terms ) { ?>
 				<h3><?php esc_html_e( 'Migrated Terms', 'mmt' ); ?></h3>
-				<p><?php echo count($migrated_terms) ?> <?php esc_html_e( 'The terms below were migrated to the current site.', 'mmt' ); ?></p>
+				<p><?php esc_html_e( 'The terms below were migrated to the current site.', 'mmt' ); ?></p>
 				<div class="mmt-items-list-overflow">
 					<?php foreach ( $migrated_terms as $migrated_term ) { ?>
 						<div class="mmt-item">

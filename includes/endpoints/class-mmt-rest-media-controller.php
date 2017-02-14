@@ -213,7 +213,7 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 	 */
 	public function migrate_media_posts( $request ) {
 
-		$data = MMT_API::get_data( 'media', [ 'timeout' => 40 ], $request->get_body_params() );
+		$data = MMT_API::get_data( 'media', [ 'timeout' => 50 ], $request->get_body_params() );
 
 		// Setup var to not tax the server looping through each time
 		$current_site_url = get_site_url();

@@ -635,21 +635,18 @@
                 call = this.sendData(base, endpoint, data),
                 progress = $('.posts-batch-progress');
 
-            call.done( function( response ){
+            call.then( function( response ){
 
-                $('.page-num').html(response.page);
+                $('.page-num').html(data.page);
                 $('.page-total').html(' of ' +response.total_pages);
 
                 if (response.page > response.total_pages) {
                     $('.button-migrate-posts')
                         .val('Continue')
                         .removeClass('button-migrate-posts')
-                        .addClass('button-next');
-
-                    $('.mmt-actions .button').prop("disabled", false);
-
+                        .addClass('button-next')
+                        .prop("disabled", false);
                 } else {
-
                     // call more data if available. Yay recursion!
                     self.getPosts(mmtWizardParams.apiHomeBase, mmtWizardParams.endpoints.batch, response);
                 }
