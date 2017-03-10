@@ -430,7 +430,6 @@ class MMT_Wizard {
 					'batch' => array(
 						'route'  => $_GET['step'] . '/batch',
 						'method' => 'POST',
-                        // todo: figure out why setting media perpage over 100 causes the batch to bail before starting
 						'per_page' => ( 'media' == $_GET['step'] ? 75 : 100 ),
 					),
 				),

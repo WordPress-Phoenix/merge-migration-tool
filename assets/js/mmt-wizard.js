@@ -637,10 +637,10 @@
 
             call.then( function( response ){
 
-                $('.page-num').html(data.page);
-                $('.page-total').html(' of ' +response.total_pages);
+                $('.page-num').html( data.page );
+                $('.page-total').html(' of ' + response.total_pages );
 
-                if (response.page > response.total_pages) {
+                if ( response.page > response.total_pages ) {
                     $('.button-migrate-posts')
                         .val('Continue')
                         .removeClass('button-migrate-posts')
