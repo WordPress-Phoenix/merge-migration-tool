@@ -222,10 +222,12 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 
 		if ( $data['posts'] ) {
 			foreach ( $data['posts'] as &$postdata ) {
-
 				// Make sure we the post does not exist already
-				$post_exist = MMT_API::get_post_by_post_name( $postdata['post_name'], OBJECT, 'attachment' );
-				if ( $post_exist !== null && ( $post_exist->post_name == $postdata['post_name'] ) ) {
+				$migrate_guid = parse_url( $postdata['guid'], PHP_URL_PATH );
+				$guid = get_site_url() . $migrate_guid;
+
+				$post_exist = MMT_API::get_post_by_guid( $guid, OBJECT, 'attachment' );
+				if ( $post_exist && ( stristr( $post_exist->guid, $migrate_guid ) ) ) {
 					continue;
 				}
 
@@ -254,7 +256,6 @@ class MMT_REST_Media_Controller extends MMT_REST_Controller {
 					$postdata = null;
 					unset( $postdata );
 				}
-
 			}
 		}
 

@@ -215,7 +215,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 
-		// todo: need to send reverse params
 		$data = MMT_API::get_data( 'posts', ['timeout' => 40 ], $request->get_body_params() );
 
 		// setup url video swapping
@@ -224,9 +223,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		$fallback_migration_author = MMT_API::get_migration_author();
 
 		if ( $data['posts'] ) {
-
 			foreach ( $data['posts'] as &$postdata ) {
-
 				// Make sure we the post does not exist already
 				$post_exist = get_page_by_path( $postdata['post_name'], OBJECT, 'post' );
 				if ( $post_exist !== null && ( $post_exist->post_name == $postdata['post_name'] ) ) {
@@ -265,7 +262,6 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 					// set the featured image if there is one
 					if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
 						$migrate_title = $postdata['post_meta']['_thumbnail_id'][0];
-						//$attachment_post = get_page_by_title( $migrate_title, OBJECT, 'attachment' );
 						$attachment_post = MMT_API::get_post_by_post_name( $migrate_title, OBJECT, 'attachment' );
 
 						if ( $attachment_post ) {
