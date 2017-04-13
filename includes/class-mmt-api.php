@@ -599,22 +599,22 @@ class MMT_API {
 	 *
 	 * @global wpdb        $wpdb       WordPress database abstraction object.
 	 *
-	 * @param string       $guid       Post guid
+	 * @param string       $guid_fragment  Partial post guid [/YYYY/MM/filename.ext]
 	 * @param string       $output     Optional. The required return type. One of OBJECT, ARRAY_A, or ARRAY_N, which correspond to
 	 *                                 a WP_Post object, an associative array, or a numeric array, respectively. Default OBJECT.
 	 * @param string|array $post_type  Optional. Post type or array of post types. Default 'page'.
 	 *
 	 * @return WP_Post|array|null|bool WP_Post (or array) on success, or null on failure.
 	 */
-	public static function get_post_by_guid( $guid, $output = OBJECT, $post_type = 'post' ) {
+	public static function get_post_by_guid( $guid_fragment, $output = OBJECT, $post_type = 'post' ) {
 		global $wpdb;
 
 		$sql = $wpdb->prepare( "
 			SELECT ID
 			FROM $wpdb->posts
-			WHERE guid = %s
+			WHERE guid LIKE %s
 			AND post_type = %s
-		", $guid, $post_type );
+		", '%' . $wpdb->esc_like($guid_fragment) . '%', $post_type );
 
 		$post = $wpdb->get_var( $sql );
 
