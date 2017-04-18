@@ -154,7 +154,9 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		if ( isset( $meta['_thumbnail_id'] ) ) {
 			$image_id = $meta['_thumbnail_id'][0];
 			$featured_image = get_post( $image_id );
-			$meta['_thumbnail_id'][0] = $featured_image->post_name;
+			//matches for /2012/07/filename.jpg
+			preg_match( "/\/20[1-9]{2}\/[0-9]{2}\/.*/", $featured_image->guid, $match );
+			$meta['_thumbnail_id'][0] = $match[0];
 		}
 
 		$meta['_migrated_data']['migrated'] = true;
@@ -262,7 +264,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 					// set the featured image if there is one
 					if ( isset( $postdata['post_meta']['_thumbnail_id'] ) ) {
 						$migrate_title = $postdata['post_meta']['_thumbnail_id'][0];
-						$attachment_post = MMT_API::get_post_by_post_name( $migrate_title, OBJECT, 'attachment' );
+						$attachment_post = MMT_API::get_post_by_guid( $migrate_title, OBJECT, 'attachment' );
 
 						if ( $attachment_post ) {
 							$postdata['post_meta']['_thumbnail_id'] = $attachment_post->ID;
