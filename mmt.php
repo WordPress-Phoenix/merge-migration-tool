@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/merge-migration-tool
  * Description: Migration or Merging the contents and users of 2 sites - multisite or single site.
  * Author: FanSided
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author URI: http://fansided.com
  * License: GPL V2
  * Text Domain: mmt
