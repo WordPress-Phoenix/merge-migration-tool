@@ -614,7 +614,7 @@ class MMT_API {
 			FROM $wpdb->posts
 			WHERE guid LIKE %s
 			AND post_type = %s
-		", '%' . $wpdb->esc_like($guid_fragment) . '%', $post_type );
+		", '%' . $wpdb->esc_like($guid_fragment), $post_type );
 
 		$post = $wpdb->get_var( $sql );
 
