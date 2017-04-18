@@ -217,7 +217,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 
-		$data = MMT_API::get_data( 'posts', ['timeout' => 40 ], $request->get_body_params() );
+		$data = MMT_API::get_data( 'posts', ['timeout' => 180 ], $request->get_body_params() );
 
 		// setup url video swapping
 		$current_site_url = get_site_url();
