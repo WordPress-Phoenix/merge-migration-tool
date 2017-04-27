@@ -56,6 +56,17 @@ class MMT_Wizard {
 	protected $notices = array();
 
 	/**
+	 * Notices
+	 *
+	 * @since 0.1.0
+	 * @var array
+	 */
+	protected $batch_defaults = array(
+		'media' => 80,
+		'post' => 75,
+	);
+
+	/**
 	 * Constructor
 	 *
 	 * @since 0.1.0
@@ -402,6 +413,33 @@ class MMT_Wizard {
 	}
 
 	/**
+	 * Determine post count per batch to process
+	 *
+	 * @return int|mixed
+	 */
+	public function output_batch_numbers() {
+		$step = $_GET['step'];
+
+		// defaults
+		$media_batch_qty = $this->batch_defaults['media'];
+		$post_batch_qty = $this->batch_defaults['post'];
+
+		// options
+		$media_batch_qty_option = MMT_API::get_media_batch_quantity();
+		$post_batch_qty_option = MMT_API::get_post_batch_quantity();
+
+		if ( ! empty( $media_batch_qty_option ) ) {
+			$media_batch_qty = $media_batch_qty_option;
+		}
+
+		if ( ! empty( $post_batch_qty_option ) ) {
+			$post_batch_qty = $post_batch_qty_option;
+		}
+
+		return 'media' == $step ? $media_batch_qty : $post_batch_qty;
+	}
+
+	/**
 	 * Scripts & Styles
 	 *
 	 * @since 0.1.0
@@ -430,11 +468,11 @@ class MMT_Wizard {
 					'batch' => array(
 						'route'  => $_GET['step'] . '/batch',
 						'method' => 'POST',
-						'per_page' => ( 'media' == $_GET['step'] ? 75 : 80 ),
+						'per_page' => $this->output_batch_numbers(),
 					),
 				),
 			)
-        );
+		);
 
 		wp_localize_script( 'mmt-wizard', 'mmtWizardParams', $data );
 	}
@@ -665,7 +703,7 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 *
 	 * @param string $notice The notice slug.
-     * @return string A set query argument.
+	 * @return string A set query argument.
 	 */
 	public function get_notice_link( $notice = '' ) {
 		if ( empty( $notice ) ) {

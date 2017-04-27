@@ -124,6 +124,43 @@ class MMT_API {
 	protected static $migration_author_input_name = 'mmt_fallback_author_id';
 
 	/**
+	 * Migration Batch Processing Quantity for Media setting name
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @var string
+	 */
+	protected static $migration_batch_media_input_name = 'mmt_media_batch_quantity_id';
+
+	/**
+	 * Migration Batch Processing Quantity for Posts setting name
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @var string
+	 */
+	protected static $migration_batch_post_input_name = 'mmt_post_batch_quantity_id';
+
+	/**
+	 * Posts per batch for media migration
+	 *
+	 * @static
+	 * @since 0.1.1
+	 * @var string
+	 */
+	protected static $migration_batch_media_quantity;
+
+	/**
+	 * Posts per batch for post migration
+	 *
+	 * @static
+	 * @since 0.1.1
+	 * @var string
+	 */
+	protected static $migration_batch_post_quantity;
+
+
+	/**
 	 * Constructor
 	 *
 	 * @since 0.1.0
@@ -367,7 +404,7 @@ class MMT_API {
 
 		foreach ( $users as $user ) {
 			$selected = selected( self::get_migration_author(), $user->data->ID, false );
-			$options .= sprintf( '<option value="%s" %s>%s</option>', $user->data->ID, $selected,$user->data->user_nicename );
+			$options .= sprintf( '<option value="%s" %s>%s</option>', $user->data->ID, $selected, $user->data->user_nicename );
 		}
 
 		return $options;
@@ -398,7 +435,7 @@ class MMT_API {
 	}
 
 	/**
-	 * Set the migration type for reference
+	 *
 	 *
 	 * @static
 	 * @since 0.1.0
@@ -406,6 +443,70 @@ class MMT_API {
 	public static function set_migration_author( $key ) {
 		self::$migration_author_id = esc_attr( $key );
 		update_option( self::$migration_author_input_name, self::$migration_author_id );
+	}
+
+	/**
+	 * Get the media batch quantity input name
+	 *
+	 * @return string
+	 */
+	public static function get_media_batch_quantity_input_name() {
+		return self::$migration_batch_media_input_name;
+	}
+
+	/**
+	 * Get the post batch quantity input name
+	 *
+	 * @return string
+	 */
+	public static function get_post_batch_quantity_input_name() {
+		return self::$migration_batch_post_input_name;
+	}
+
+	/**
+	 * Set media per batch quantity
+	 *
+	 * @static
+	 * @since 0.1.0
+	 */
+	public static function set_media_batch_quantity( $key ) {
+		self::$migration_batch_media_quantity = esc_attr( $key );
+		update_option( self::$migration_batch_media_input_name, self::$migration_batch_media_quantity );
+	}
+
+	/**
+	 * Set posts per batch quantity
+	 *
+	 * @static
+	 * @since 0.1.0
+	 */
+	public static function set_post_batch_quantity( $key ) {
+		self::$migration_batch_post_quantity = esc_attr( $key );
+		update_option( self::$migration_batch_post_input_name, self::$migration_batch_post_quantity );
+	}
+
+	/**
+	 * Retrieve media per batch quantity
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return integer
+	 */
+	public static function get_media_batch_quantity() {
+		return get_option( self::$migration_batch_media_input_name );
+	}
+
+	/**
+	 * Retrieve posts per batch quantity
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @return integer
+	 */
+	public static function get_post_batch_quantity() {
+		return get_option( self::$migration_batch_post_input_name );
 	}
 
 	/**
