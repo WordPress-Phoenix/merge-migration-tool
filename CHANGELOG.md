@@ -1,3 +1,6 @@
+#### 1.1.0
+* Adds ability to set per batch numbers for media and posts
+
 #### 1.0.3
 * Reduces post count to prevent timeouts
 
