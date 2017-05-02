@@ -5,11 +5,17 @@
  * Users step controller.
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Wizard
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Wizard;
+
+use MergeMigrationTool\Admin\MMT_API;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_Wizard_Step
@@ -341,7 +347,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 		$migrateable_users  = array();
 
 		// Get Current Site Users
-		$current_users_query = new WP_User_Query( array( 'number' => - 1 ) );
+		$current_users_query = new \WP_User_Query( array( 'number' => - 1 ) );
 		foreach ( $current_users_query->get_results() as $user ) {
 			$current_site_users[] = array(
 				'username' => $user->user_login,
@@ -487,8 +493,8 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 
 			// Check for error
 			if ( is_wp_error( $user_id ) ) {
-				MMT::debug( $user['id'] );
-				MMT::debug( $user_id->get_error_message() );
+				MMT_API::debug( $user['id'] );
+				MMT_API::debug( $user_id->get_error_message() );
 				continue;
 			}
 
@@ -497,7 +503,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 				$wpdb->update( $wpdb->users, array( 'user_pass' => $user['password'] ), array( 'ID' => $user_id ), array( '%s' ), array( '%d' ) );
 			}
 
-			$migrated_users[] = new WP_User( $user_id );
+			$migrated_users[] = new \WP_User( $user_id );
 		}
 
 		if ( ! empty( $migrated_users ) ) {
@@ -550,7 +556,7 @@ class MMT_Wizard_Step_Users extends MMT_Wizard_Step {
 			// set the role for the user, new primary blog will be set within this method
 			add_user_to_blog( $current_blog_id, $user_id, $role );
 
-			$migrated_users[] = new WP_User( $user_id );
+			$migrated_users[] = new \WP_User( $user_id );
 		}
 
 		if ( ! empty( $migrated_users ) ) {

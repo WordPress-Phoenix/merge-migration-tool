@@ -1,0 +1,49 @@
+[
+    {
+        "name": "wordpress-phoenix/abstract-plugin-base",
+        "version": "2.0.3",
+        "version_normalized": "2.0.3.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/WordPress-Phoenix/abstract-plugin-base.git",
+            "reference": "f0c7c61c41229900e64b3cda48048e5ebdaa5cae"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/WordPress-Phoenix/abstract-plugin-base/zipball/f0c7c61c41229900e64b3cda48048e5ebdaa5cae",
+            "reference": "f0c7c61c41229900e64b3cda48048e5ebdaa5cae",
+            "shasum": ""
+        },
+        "time": "2017-02-28 23:18:56",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "classmap": {
+                "classmap": [
+                    "src/abstract_plugin.php"
+                ]
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "GPL-v3"
+        ],
+        "authors": [
+            {
+                "name": "Seth Carstens",
+                "email": "seth.carstens@gmail.com",
+                "homepage": "http://github.com/scarstens",
+                "role": "Developer"
+            }
+        ],
+        "description": "PHP class to extend when building a WordPress plugin allowing you to follow smart plugin setup standards.",
+        "homepage": "https://github.com/WordPress-Phoenix/abstract-plugin-base",
+        "keywords": [
+            "abstract",
+            "boilerplate",
+            "plugin",
+            "standardize",
+            "wordpress"
+        ]
+    }
+]

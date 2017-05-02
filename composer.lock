@@ -1,0 +1,64 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "8e64e52dedea8f83d552bf5241e07de6",
+    "content-hash": "ac24d2cdc12c8e4493e112ac0f99d093",
+    "packages": [
+        {
+            "name": "wordpress-phoenix/abstract-plugin-base",
+            "version": "2.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/WordPress-Phoenix/abstract-plugin-base.git",
+                "reference": "f0c7c61c41229900e64b3cda48048e5ebdaa5cae"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/WordPress-Phoenix/abstract-plugin-base/zipball/f0c7c61c41229900e64b3cda48048e5ebdaa5cae",
+                "reference": "f0c7c61c41229900e64b3cda48048e5ebdaa5cae",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": {
+                    "classmap": [
+                        "src/abstract_plugin.php"
+                    ]
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-v3"
+            ],
+            "authors": [
+                {
+                    "name": "Seth Carstens",
+                    "email": "seth.carstens@gmail.com",
+                    "homepage": "http://github.com/scarstens",
+                    "role": "Developer"
+                }
+            ],
+            "description": "PHP class to extend when building a WordPress plugin allowing you to follow smart plugin setup standards.",
+            "homepage": "https://github.com/WordPress-Phoenix/abstract-plugin-base",
+            "keywords": [
+                "abstract",
+                "boilerplate",
+                "plugin",
+                "standardize",
+                "wordpress"
+            ],
+            "time": "2017-02-28 23:18:56"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

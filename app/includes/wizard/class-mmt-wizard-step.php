@@ -2,14 +2,18 @@
 /**
  * Migration Merge Tool - Abstract - Wizard Step
  *
- * All other wizard steps shold be extended from this class.
+ * All other wizard steps should be extended from this class.
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Wizard
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Wizard;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_Wizard_Step

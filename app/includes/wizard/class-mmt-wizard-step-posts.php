@@ -5,11 +5,17 @@
  * Users step controller.
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Wizard
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Wizard;
+
+use MergeMigrationTool\Admin\MMT_API;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_Wizard_Step_Posts

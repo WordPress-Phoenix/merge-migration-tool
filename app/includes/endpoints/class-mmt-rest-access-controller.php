@@ -3,11 +3,15 @@
  * Migration Merge Tool - Access - Rest Controller Class
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Endpoints
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Endpoints;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_REST_Access_Controller
@@ -43,7 +47,7 @@ class MMT_REST_Access_Controller extends MMT_REST_Controller {
 	public function register_routes() {
 		register_rest_route( $this->namespace, '/' . $this->rest_base, array(
 			array(
-				'methods'             => WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),

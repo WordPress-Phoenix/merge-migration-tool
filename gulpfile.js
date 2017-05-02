@@ -17,17 +17,17 @@ var stripDebug   = require('gulp-strip-debug');
 
 // paths
 var paths = {
-	jsMainSrc       : [ './assets/js/src/mmt.js' ],
-	jsWizardSrc     : [ './assets/js/src/jquery.blockUI.js', './assets/js/src/mmt-wizard.js' ],
-	jsDest          : './assets/js/',
-	jsWatchers      : [ './assets/js/src/*.js' ],
-	cssMainSrc      : [ './assets/css/scss/mmt.scss' ],
-	cssWizardSrc    : [ './assets/css/scss/mmt-wizard.scss' ],
-	cssDest         : './assets/css/',
+	jsMainSrc       : [ './app/assets/js/src/mmt.js' ],
+	jsWizardSrc     : [ './app/assets/js/src/jquery.blockUI.js', './app/assets/js/src/mmt-wizard.js' ],
+	jsDest          : './app/assets/js/',
+	jsWatchers      : [ './app/assets/js/src/*.js' ],
+	cssMainSrc      : [ './app/assets/css/scss/mmt.scss' ],
+	cssWizardSrc    : [ './app/assets/css/scss/mmt-wizard.scss' ],
+	cssDest         : './app/assets/css/',
 	cssSourceMapDest: './',
-	cssWatchers     : [ './assets/css/scss/**/*.scss' ],
-	imgSrc          : [ './assets/img/**/*.{png,jpg,gif,svg}' ],
-	imgDest         : './assets/img/'
+	cssWatchers     : [ './app/assets/css/scss/**/*.scss' ],
+	imgSrc          : [ './app/assets/img/**/*.{png,jpg,gif,svg}' ],
+	imgDest         : './app/assets/img/'
 };
 
 // autoprefixer
