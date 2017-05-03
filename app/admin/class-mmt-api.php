@@ -3,11 +3,15 @@
  * Migration Merge Tool - API
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Admin
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Admin;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_REST_API
@@ -175,33 +179,27 @@ class MMT_API {
 	 * @since 0.1.0
 	 */
 	public function controllers() {
-		$this->includes();
-		$namespace   = apply_filters( 'mmt_rest_api_namespace', self::$namespace );
-		$controllers = apply_filters( 'mmt_rest_api_controllers', array(
-			'MMT_REST_Access_Controller',
-			'MMT_REST_Users_Controller',
-			'MMT_REST_Posts_Controller',
-			'MMT_REST_Terms_Controller',
-			'MMT_REST_Media_Controller',
-		) );
-		foreach ( $controllers as $controller ) {
-			$this->$controller = new $controller( $namespace );
-			$this->$controller->register_routes();
-		}
-	}
+		$namespace = apply_filters( 'mmt_rest_api_namespace', self::$namespace );
 
-	/**
-	 * Include REST API Classes
-	 *
-	 * @since 0.1.0
-	 */
-	public function includes() {
-		require_once MMT_INC . 'endpoints/abstract-class-mmt-rest-controller.php';
-		require_once MMT_INC . 'endpoints/class-mmt-rest-access-controller.php';
-		require_once MMT_INC . 'endpoints/class-mmt-rest-users-controller.php';
-		require_once MMT_INC . 'endpoints/class-mmt-rest-posts-controller.php';
-		require_once MMT_INC . 'endpoints/class-mmt-rest-terms-controller.php';
-		require_once MMT_INC . 'endpoints/class-mmt-rest-media-controller.php';
+		$controllers = apply_filters( 'mmt_rest_api_controllers', array(
+			'access',
+			'users',
+			'posts',
+			'terms',
+			'media',
+		) );
+
+		foreach ( $controllers as $controller ) {
+			$psr_namespace = 'MergeMigrationTool\\Includes\\Endpoints';
+			$controller_name = sprintf( '%s\\MMT_REST_%s_Controller', $psr_namespace, ucfirst( $controller ) );
+
+			if ( ! class_exists( $controller_name ) ) {
+				continue;
+			}
+
+			$controller = new $controller_name( $namespace );
+			$controller->register_routes();
+		}
 	}
 
 	/**
@@ -274,7 +272,7 @@ class MMT_API {
 	 * @return 0.1.0
 	 */
 	public static function set_remote_key( $key ) {
-		self::$remote_key = esc_attr( $key );
+		self::$remote_key = self::hash_key( $key );
 		update_option( self::$remote_key_input_name, self::$remote_key );
 	}
 
@@ -371,14 +369,13 @@ class MMT_API {
 	 * @static
 	 * @since 0.1.0
 	 *
+	 * todo: more options to come
+	 *
 	 * @return string
 	 */
 	public static function get_migration_types() {
 		$types = apply_filters( 'mmt_migration_types', array(
 			'multisite-site-within-site'          => 'Site to site within multisite',
-			// todo: to be added in a future release
-			//'multisite-site-to-category'          => 'Site to category within multisite',
-			//'multisite-site-from-other-multisite' => 'Site from one Multisite to another',
 		) );
 
 		$options = '';
@@ -564,10 +561,6 @@ class MMT_API {
 			return false;
 		}
 
-		// hash the key for some additional security, not much but....
-		// todo: hash key before compare and before storing in db
-		//$remote_key = self::hash_key( $remote_key );
-
 		$url = sprintf( '%s/wp-json/%s/%s', untrailingslashit( $remote_url ), self::get_namespace(), $endpoint );
 
 		// Provide a way to send additional query params
@@ -726,6 +719,25 @@ class MMT_API {
 		return false;
 	}
 
+	/**
+	 * Debug Function
+	 *
+	 * @static
+	 * @since 0.1.0
+	 *
+	 * @param string $message The debug message.
+	 *
+	 * @return void
+	 */
+	public static function debug( $message ) {
+		if ( WP_DEBUG === true ) {
+			if ( is_array( $message ) || is_object( $message ) ) {
+				error_log( print_r( $message, true ) );
+			} else {
+				error_log( $message );
+			}
+		}
+	}
+
 }
 
-new MMT_API();

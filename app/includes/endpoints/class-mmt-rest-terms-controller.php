@@ -3,11 +3,15 @@
  * Migration Merge Tool - Users - Rest Controller Class
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Endpoints
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Endpoints;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_REST_Terms_Controller
@@ -53,7 +57,7 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 	public function register_routes() {
 		register_rest_route( $this->namespace, '/' . $this->rest_base, array(
 			array(
-				'methods'             => WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
@@ -82,12 +86,7 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 
 		// Run the requested terms or get them all.
 		$taxonomies = $request['taxonomy'];
-		$taxonomies = array_shift( $taxonomies );
 		$taxonomies = explode(',', $taxonomies );
-
-		if ( true == $request['showall'] ) {
-			$taxonomies = get_object_taxonomies('post');
-		}
 
 		$prepared_args['taxonomy'] = $taxonomies;
 
@@ -193,18 +192,12 @@ class MMT_REST_Terms_Controller extends MMT_REST_Controller {
 				'type'              => 'boolean',
 				'validate_callback' => 'rest_validate_request_arg',
 			),
-			'showall' => array(
-				'default'           => 1,
-				'description'       => __( 'Hide terms without assignment', 'mmt' ),
-				'readonly'          => true,
-				'validate_callback' => 'rest_validate_request_arg',
-			),
 			'taxonomy' => array(
 				'description'       => __( 'Ascending or descending order for terms', 'mmt' ),
-				'type'              => 'array',
-				'default'           => array('category', 'post_tag'),
-				//'sanitize_callback' => 'sanitize_text_field',
-				//'validate_callback' => 'rest_validate_request_arg',
+				'type'              => 'string',
+				'default'           => implode( ',', get_object_taxonomies( 'post' ) ),
+				'sanitize_callback' => 'sanitize_text_field',
+				'validate_callback' => 'rest_validate_request_arg',
 			),
 			'order'   => array(
 				'description'       => __( 'Ascending or descending order for terms', 'mmt' ),

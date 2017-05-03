@@ -3,10 +3,17 @@
  * Migration Merge Tool - Admin
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Admin
  * @since      0.1.0
  */
-defined( 'ABSPATH' ) or die();
+
+namespace MergeMigrationTool\Admin;
+
+use MergeMigrationTool\Includes\Wizard\MMT_Wizard;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * MMT_Admin class.
@@ -36,10 +43,10 @@ class MMT_Admin {
 
 		// Admin page and settings.
 		add_action( 'admin_menu', array( $this, 'register_admin_settings_page' ) );
-		add_action( 'admin_init', array( $this, 'register_admin_settings' ) );
+		add_action( 'admin_menu', array( $this, 'register_admin_settings' ) );
 
 		// Admin Wizard.
-		add_action( 'init', array( $this, 'register_wizard' ) );
+		add_action( 'wp_loaded', array( $this, 'register_wizard' ) );
 	}
 
 	/**
@@ -160,8 +167,6 @@ class MMT_Admin {
 		}
 
 		// Include Wizard.
-		include_once MMT_INC . 'wizard/class-mmt-wizard.php';
+		new MMT_Wizard();
 	}
 }
-
-new MMT_Admin();

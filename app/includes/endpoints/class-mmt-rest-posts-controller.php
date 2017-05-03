@@ -3,11 +3,17 @@
  * Migration Merge Tool - Posts - Rest Controller Class
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Endpoints
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Endpoints;
+
+use MergeMigrationTool\Admin\MMT_API;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_REST_Posts_Controller
@@ -43,7 +49,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	public function register_routes() {
 		register_rest_route( $this->namespace, '/' . $this->rest_base, array(
 			array(
-				'methods'             => WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
@@ -51,14 +57,14 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>[\d]+)', array(
 			array(
-				'methods'             => WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 			)
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
 			array(
-				'methods'             => WP_REST_Server::CREATABLE,
+				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'migrate_blog_posts' ),
 			),
 		) );
@@ -74,7 +80,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$posts_query = new WP_Query(
+		$posts_query = new \WP_Query(
 			array(
 				'post_type'      => 'post',
 				'paged'           => $request['page'],
@@ -97,7 +103,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 			// Wrap the media in a response object
 			$response = rest_ensure_response( $posts );
 		} else {
-			return new WP_Error( 'rest_posts_no_posts', __( 'No Media Content.' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'rest_posts_no_posts', __( 'No Media Content.' ), array( 'status' => 404 ) );
 		}
 
 		return $response;
@@ -110,17 +116,14 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 *
-	 * // todo: move this logic into get_items method
-	 *
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_item( $request ) {
-		// todo: fix this
 		$id   = $request['id'];
 		$post = get_post( $id );
 
 		if ( empty( $id ) || empty( $post->ID ) ) {
-			return new WP_Error( 'rest_post_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
 		}
 
 		$post     = $this->prepare_item_for_response( $post, $request );
@@ -135,7 +138,7 @@ class MMT_REST_Posts_Controller extends MMT_REST_Controller {
 	 * @since 0.1.0
 	 *
 	 * @param mixed           $post    The post object.
-	 * @param WP_REST_Request $request Request object.
+	 * @param \WP_REST_Request $request Request object.
 	 *
 	 * @return mixed
 	 */

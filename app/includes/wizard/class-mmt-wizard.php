@@ -3,11 +3,17 @@
  * Migration Merge Tool - Migration Wizard
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Wizard
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Wizard;
+
+use MergeMigrationTool\Admin\MMT_API;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_Wizard
@@ -112,10 +118,8 @@ class MMT_Wizard {
 		) );
 
 		// Migration Steps.
-		include_once MMT_INC . 'wizard/abstract-class-mmt-wizard-step.php';
 		foreach ( $migration_steps as $migration_step ) {
-			include_once sprintf( MMT_INC . 'wizard/class-mmt-wizard-step-%s.php', $migration_step );
-			$migration_step_class_name = sprintf( 'MMT_Wizard_Step_%s', ucfirst( $migration_step ) );
+			$migration_step_class_name = sprintf( '%s\\MMT_Wizard_Step_%s', __NAMESPACE__, ucfirst( $migration_step ) );
 			if ( ! class_exists( $migration_step_class_name ) ) {
 				continue;
 			}
@@ -221,11 +225,11 @@ class MMT_Wizard {
 	 * @since 0.1.0
 	 */
 	public function steps() {
-		$ouput_steps = $this->steps;
-		array_shift( $ouput_steps );
+		$output_steps = $this->steps;
+		array_shift( $output_steps );
 		?>
 		<ol class="mmt-steps">
-			<?php foreach ( $ouput_steps as $step_key => $step ) { ?>
+			<?php foreach ( $output_steps as $step_key => $step ) { ?>
 				<li class="<?php
 				if ( $step_key === $this->step ) {
 					echo 'active';
@@ -385,7 +389,8 @@ class MMT_Wizard {
 		MMT_API::set_remote_key( $remote_key );
 
 		// Verify Access.
-		if ( ! MMT_API::verify_access() ) {
+        $v = MMT_API::verify_access();
+		if ( ! $v ) {
 			wp_safe_redirect( esc_url_raw( $this->get_notice_link( 'no-api-access' ) ) );
 			exit;
 		}
@@ -723,5 +728,3 @@ class MMT_Wizard {
 		return add_query_arg( array( 'step' => $keys[ array_search( $this->step, array_keys( $this->steps ), true ) ], 'wizard-notice' => $notice ) );
 	}
 }
-
-new MMT_Wizard();

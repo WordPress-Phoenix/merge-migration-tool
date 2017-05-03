@@ -2,21 +2,25 @@
 /**
  * Migration Merge Tool - Abstract - Rest Controller Class
  *
- * All other controllers shold be extended from this class.
+ * All other controllers should be extended from this class.
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Endpoints
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Endpoints;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_REST_Controller
  *
  * @since 0.1.0
  */
-abstract class MMT_REST_Controller extends WP_REST_Controller {
+abstract class MMT_REST_Controller extends \WP_REST_Controller {
 
 	/**
 	 * The namespace of this controller's route.
@@ -60,7 +64,7 @@ abstract class MMT_REST_Controller extends WP_REST_Controller {
 
 		// todo: Fix problem with when trying to retrieve options for current user.
 		//if ( ! current_user_can( 'manage_options' ) ) {
-		//	return new WP_Error( 'rest_user_no_access', __( 'Unauthorized. No soup for you!', 'mmt' ), array( 'status' => 401 ) );
+		//	return new \WP_Error( 'rest_user_no_access', __( 'Unauthorized. No soup for you!', 'mmt' ), array( 'status' => 401 ) );
 		//}
 
 		// Allow defining the secret key in the config, or setting the site option.

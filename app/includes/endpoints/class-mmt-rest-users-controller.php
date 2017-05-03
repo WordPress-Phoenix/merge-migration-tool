@@ -3,11 +3,15 @@
  * Migration Merge Tool - Users - Rest Controller Class
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Endpoints
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Endpoints;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_REST_Users_Controller
@@ -43,7 +47,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 	public function register_routes() {
 		register_rest_route( $this->namespace, '/' . $this->rest_base, array(
 			array(
-				'methods'             => WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => $this->get_collection_params(),
@@ -51,7 +55,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 		) );
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>[\d]+)', array(
 			array(
-				'methods'             => WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => array(
@@ -103,15 +107,12 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 		 * @param array           $user_args Array of arguments for WP_User_Query.
 		 * @param WP_REST_Request $request   The current request.
 		 */
-
-		// todo: add ascending key e.g. 1-100
-
 		$user_args = apply_filters( 'mmt_rest_api_user_query', $user_args, $request );
 
-		$users_query = new WP_User_Query( $user_args );
+		$users_query = new \WP_User_Query( $user_args );
 
 		if ( empty( $users_query->get_results() ) ) {
-			return new WP_Error( 'rest_user_no_data', __( 'No data found.', 'mmt' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'rest_user_no_data', __( 'No data found.', 'mmt' ), array( 'status' => 404 ) );
 		} else {
 			$users = array();
 			foreach ( $users_query->get_results() as $user ) {
@@ -133,7 +134,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 			// Out-of-bounds, run the query again without LIMIT for total count
 			unset( $user_args['number'] );
 			unset( $user_args['offset'] );
-			$user_count_query = new WP_User_Query( $user_args );
+			$user_count_query = new \WP_User_Query( $user_args );
 			$total_users      = $user_count_query->get_total();
 		}
 		$response->header( 'X-WP-Total', (int) $total_users );
@@ -173,7 +174,7 @@ class MMT_REST_Users_Controller extends MMT_REST_Controller {
 		$user = get_userdata( $id );
 
 		if ( empty( $id ) || empty( $user->ID ) ) {
-			return new WP_Error( 'rest_user_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'rest_user_invalid_id', __( 'Invalid resource id.' ), array( 'status' => 404 ) );
 		}
 
 		$user     = $this->prepare_item_for_response( $user, $request );

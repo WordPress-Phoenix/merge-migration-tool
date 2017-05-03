@@ -5,11 +5,17 @@
  * Terms step controller.
  *
  * @package    MMT
- * @subpackage Includes
+ * @subpackage Includes\Wizard
  * @since      0.1.0
  */
 
-defined( 'ABSPATH' ) or die();
+namespace MergeMigrationTool\Includes\Wizard;
+
+use MergeMigrationTool\Admin\MMT_API;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Class MMT_Wizard_Step_Terms
@@ -525,8 +531,8 @@ class MMT_Wizard_Step_Terms extends MMT_Wizard_Step {
 
 			// Check for error
 			if ( is_wp_error( $term_array ) ) {
-				MMT::debug( $term_name );
-				MMT::debug( $term_array->get_error_message() );
+				MMT_API::debug( $term_name );
+				MMT_API::debug( $term_array->get_error_message() );
 				continue;
 			}
 
