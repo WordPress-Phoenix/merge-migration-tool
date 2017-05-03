@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/merge-migration-tool
  * Description: Migration of content from
  * Author: FanSided
- * Version: 1.1.0
+ * Version: 2.0.0
  * Author URI: http://fansided.com
  * License: GPL V2
  * Text Domain: mmt
