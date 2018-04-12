@@ -225,7 +225,7 @@ class MMT_API {
 	 * @return string
 	 */
 	protected static function get_migration_key() {
-		return get_option( 'mmt_key' );
+		return defined( 'MMT_SECRET_KEY' ) ? MMT_SECRET_KEY : get_option( 'mmt_key' );
 	}
 
 	/**
